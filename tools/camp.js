@@ -28,7 +28,7 @@ function oneRun(){return new Promise(done=>{
   const step=()=>{for(let f=0;f<900;f++){
       if(G.state==='cutin'){endCutin();continue}
       if(G.state==='revive'){G.revT0=performance.now()-REV_T*1000-1;updRevive();continue}
-      if(G.state==='levelup'){const c=G.choices;let i=c.findIndex(x=>x.own&&x.next);if(i<0)i=c.findIndex(x=>x.d&&!x.own);if(i<0)i=0;pick(i);continue}
+      if(G.state==='levelup'){const c=G.choices;let i=c.findIndex(x=>x.k==='sp');if(i<0)i=c.findIndex(x=>x.k==='sk');if(i<0)i=c.findIndex(x=>x.k==='up'&&x.u==='lv');if(i<0)i=c.findIndex(x=>x.k==='up');if(i<0)i=0;pick(i);continue}
       if(G.state==='over'||G.state==='win')break;
       if(G.state!=='play')G.state='play';
       let vx=0,vy=0;for(const e of inR(P.x,P.y,230)){if(e.prop)continue;const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1,w=4000/(d*d);vx+=dx/d*w;vy+=dy/d*w}

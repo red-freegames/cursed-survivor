@@ -11,14 +11,11 @@ window.botRun=function(cfg){return new Promise(done=>{
   R0.fd='-';gameOver=()=>{if(!R0.deaths)R0.fd=(G.t/60).toFixed(1)+'分';R0.deaths++;(R0.dts=R0.dts||[]).push(Math.round(G.t/6)/10);P.hp=P.max;P.inv=2;G.state='play'};
   win=()=>{G.state='done'};
   const BS=[];const osb=spawnBoss;spawnBoss=k=>{osb(k);G.boss.t0=G.t;BS.push(G.boss)};R0.chests=0;openChest=()=>{R0.chests++;rollChest();G.state='play'};
+  if(cfg.allChars)SAVE.unlocked=CHARS.map(c=>c.id);
   const step=()=>{
     for(let f=0;f<900;f++){
       if(G.state==='cutin'){endCutin();continue}
-      if(G.state==="levelup"){const c=G.choices,pf=cfg.prefer||[];let i=c.findIndex(x=>x.d&&pf.includes(x.d.id)&&x.own);if(cfg.fill&&G.st.length<6&&i<0)i=c.findIndex(x=>x.d&&!x.own);if(i<0)i=c.findIndex(x=>x.d&&pf.includes(x.d.id));
-        // 狙いの部が揃うまでは、関係ないスタンドの新規取得は避け、リロールで探す
-        if(i<0&&pf.length&&G.rerolls>0&&G.st.filter(s=>pf.includes(s.def.id)).length<Math.min(4,pf.length)&&c.every(x=>!x.own||!pf.includes(x.d&&x.d.id))&&G.st.length<6){G.rerolls--;openChoice(false);continue}
-        if(i<0&&pf.length&&G.st.length<6&&G.lv>=8)i=c.findIndex(x=>x.d&&!x.own);
-        if(i<0)i=c.findIndex(x=>x.own&&x.next);if(i<0)i=c.findIndex(x=>x.d&&!x.own);if(i<0)i=0;pick(i);continue}
+      if(G.state==="levelup"){const c=G.choices;let i=c.findIndex(x=>x.k==="sp");if(i<0)i=c.findIndex(x=>x.k==="sk"&&(x.sk.ch||!x.sk.passive||x.sk.id==="kokusen"));if(i<0)i=c.findIndex(x=>x.k==="up"&&x.u==="lv");if(i<0)i=c.findIndex(x=>x.k==="up"&&x.u==="pow");if(i<0)i=c.findIndex(x=>x.k==="up");if(i<0)i=0;pick(i);continue}
       if(G.state==='chest'){G.state='play'}
       if(G.state!=="play"){if(G.state==="done"||G.t>=(cfg.maxT||600))break;G.state="play"}
       // 操縦：敵から離れ、近くの経験値・矢尻へ寄る
@@ -31,12 +28,12 @@ window.botRun=function(cfg){return new Promise(done=>{
       else if(tg&&(td<900||G.chests.includes(tg))){vx+=(tg.x-P.x)/td*.8;vy+=(tg.y-P.y)/td*.8}else{vx+=Math.cos(G.t*.3)*.5;vy+=Math.sin(G.t*.3)*.5}
       const l=Math.hypot(vx,vy)||1;joy.on=true;joy.dx=vx/l;joy.dy=vy/l;
       update(1/60);for(const b of BS)if(b.dead&&b.dt===undefined)b.dt=G.t-b.t0;
-      const st=G.st;if(st.length>=6&&R0.full===null)R0.full=G.t;
-      if(st.length>=6&&st.every(s=>s.lv>=MAXLV)&&R0.allMax===null)R0.allMax=G.t;
+      const st=G.st;if(st.length>=2&&R0.full===null)R0.full=G.t;
+      if(st.length>=2&&st.every(s=>s.lv>=MAXLV)&&R0.allMax===null)R0.allMax=G.t;
       if(st.some(s=>s.aw)&&R0.firstAw===null)R0.firstAw=G.t;
-      if(st.length>=6&&st.every(s=>s.aw)&&R0.allAw===null)R0.allAw=G.t;
+      if(st.length>=2&&st.every(s=>s.aw)&&R0.allAw===null)R0.allAw=G.t;
       if(G.t>=(cfg.maxT||600))break}
-    if(G.t>=(cfg.maxT||600)||G.state==="done"){joy.on=false;R0.lv=G.lv;R0.kills=G.kills;R0.gold=Math.floor(G.gold);R0.fin=!!G.finalKilled;spawnBoss=osb;damageP=odp;R0.cageHit=Math.round(R0.cageHit);R0.hurt=Math.round(R0.hurt);R0.boss=BS.map(b=>b.dt!==undefined?Math.round(b.dt)+'秒':'残'+Math.round(b.hp/b.max*100)+'%').join(' ');R0.firstDeath=R0.fd;R0.left=G.chests.length;R0.aw=G.st.filter(s=>s.aw).length;R0.max=G.st.filter(s=>s.lv>=MAXLV).length;
+    if(G.t>=(cfg.maxT||600)||G.state==="done"){joy.on=false;R0.lv=G.lv;R0.kills=G.kills;R0.gold=Math.floor(G.gold);R0.fin=!!G.finalKilled;spawnBoss=osb;damageP=odp;R0.cageHit=Math.round(R0.cageHit);R0.hurt=Math.round(R0.hurt);R0.boss=BS.map(b=>b.dt!==undefined?Math.round(b.dt)+'秒':'残'+Math.round(b.hp/b.max*100)+'%').join(' ');R0.firstDeath=R0.fd;R0.left=G.chests.length;R0.aw=G.st.filter(s=>s.aw).length;R0.max=G.st.filter(s=>s.lv>=MAXLV).length;R0.sk=G.st.map(s=>s.who.name.split(" ")[1]+":"+s.lv+"/"+s.skills.length).join(" ");
       for(const k of['full','allMax','firstAw','allAw'])R0[k]=R0[k]===null?'-':(R0[k]/60).toFixed(1)+'分';_res.push(R0);done(R0);return}
     window._tick(step)};
   step()})};

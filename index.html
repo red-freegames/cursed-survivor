@@ -651,6 +651,11 @@ a.bigbtn.more{background:linear-gradient(180deg,#14306e,#0a1636);border-color:rg
 /* ゲームオーバー */
 #tbc{font-family:Cinzel;letter-spacing:.14em}
 #kan{font-family:"Yuji Syuku",serif;-webkit-text-stroke:0;text-shadow:0 0 6px #000,0 0 50px #c8142a}
+/* 新システム：カードのキャラ表示 */
+.cwho{display:inline-flex;align-items:center;gap:6px;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;font-weight:800;font-size:13px;color:#e8dfc8}
+.cwho img{height:28px;width:28px;object-fit:cover;object-position:50% 12%;border:1px solid rgba(232,223,200,.4);background:#0c0f17}
+.card.sup .cart img{height:110px;filter:drop-shadow(0 0 10px var(--c))}
+.card.up .cart img,.card.skill .cart img{height:84px}
 /* スクロールバー */
 ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#2a3044}::-webkit-scrollbar-track{background:#07080d}
 </style>
@@ -684,7 +689,7 @@ a.bigbtn.more{background:linear-gradient(180deg,#14306e,#0a1636);border-color:rg
   <div class="row2" style="margin-top:14px"><button class="bigbtn sub" id="trainBtn">トレーニング</button><button class="bigbtn sub" id="zukanBtn">図鑑・実績</button><button class="bigbtn sub" id="setBtn">設定</button></div>
   <div class="row2"><a class="bigbtn sub more" href="https://red-freegames.github.io/">🎮 他のゲームを見る</a></div>
   <div class="best" id="best"></div>
-  <div class="how">PC：WASD / 矢印キーで移動　スマホ：画面をドラッグ<br>攻撃はすべて術式が自律して行う ─ 最大6体・全28種<br>ステージに潜む術師を探し出せ（MAPで位置を確認）<br>マネーで主人公の解放・トレーニングができる<br>Lv MAXの術式は「呪物」に触れると開眼する<br>1ステージ10分。10:00まで生き延びればクリア<br>ステージ5以降は、8:00に現れるラスボスも倒す必要がある</div>
+  <div class="how">PC：WASD / 矢印キーで移動　スマホ：画面をドラッグ<br>出撃キャラ＋サポート1人の術式が自動で戦う<br>レベルアップで「強化」か「新スキル」を選ぶ（黒閃・専用呪術など）<br>ステージに潜む術師を探し出せ（MAPで位置を確認）<br>マネーで主人公の解放・トレーニングができる<br>Lv MAXの術式は「呪物」に触れると開眼する<br>1ステージ10分。10:00まで生き延びればクリア<br>ステージ5以降は、8:00に現れるラスボスも倒す必要がある</div>
   <div class="fanote" style="margin-top:8px;font-size:12px;color:#c9b8e0;opacity:.85;text-align:center">※個人制作の非公式ファンゲームです</div>
   <div class="marq"><div id="marq"></div></div>
 </div>
@@ -810,7 +815,7 @@ const MAXLV=13,effLv=r=>1+(r-1)*7/12;
 // 説明文の端数を整える（10以上は整数、未満は小数1桁）
 const dfmt=t=>t.replace(/\d+\.\d+/g,m=>{const v=+m;return v>=10?String(Math.round(v)):String(+v.toFixed(1))});
 const TYPE_NAME=['近距離型','遠距離・範囲型','特殊型'],TYPE_COL=['#ff5c8a','#3dd6ff','#ffd23f'];
-const xpNeed=l=>Math.floor((5+l*4+Math.pow(l,1.6))*.7);
+const xpNeed=l=>Math.floor((5+l*4+Math.pow(l,1.6))*.7*1.25);
 let BEST=0;try{BEST=+localStorage.getItem('cursedSurvBest')||0}catch(e){}
 // セーブ：所持マネーと解放状況（最初は星野ジンのみ）。ステージは今後マネーで解放する想定
 let SAVE={unlocked:['jin'],stands:['star'],found:[],money:0,stages:['s1'],pu:{},cm:{}};try{const s=JSON.parse(localStorage.getItem('cursedSurvSave')||'null');if(s&&Array.isArray(s.unlocked))SAVE=Object.assign(SAVE,s)}catch(e){}
@@ -843,7 +848,7 @@ function makeStatImgs(list){(list||STATS).forEach(st=>{const c=document.createEl
   g.font='40px "Shippori Mincho B1",sans-serif';g.textAlign='center';g.textBaseline='middle';g.lineWidth=6;g.strokeText(st.sym,0,3);g.fillStyle='#fff';g.fillText(st.sym,0,3);st.img=c.toDataURL()})}makeStatImgs();
 const BONUS0=()=>Object.fromEntries(STATS.map(s=>[s.id,0]));
 
-/* 奥義：Lv MAX の術式が「呪物」に触れた時のみ付与される追加能力 */
+/* 必殺技：練度MAX のキャラが「呪物」に触れた時のみ付与される追加能力 */
 const aw=id=>G.st.find(s=>s.aw&&s.def.id===id);
 const AWAKE={
  star:{name:'領域展開「伏せし王の伽藍」',desc:'20秒毎に自ら領域を展開（5秒）。領域内の敵は動けず、拳は必中する',
@@ -1011,7 +1016,7 @@ function newGame(ch,stg,hard,endless){
 const CELL=64;const grid=new Map();
 const gk=(x,y)=>(x+32768)*65536+(y+32768);
 function buildGrid(){grid.clear();for(const e of G.en){if(e.dead)continue;const k=gk(Math.floor(e.x/CELL),Math.floor(e.y/CELL));let a=grid.get(k);if(!a){a=[];grid.set(k,a)}a.push(e)}}
-function inR(x,y,r){const out=[],m=r+46;const x0=Math.floor((x-m)/CELL),x1=Math.floor((x+m)/CELL),y0=Math.floor((y-m)/CELL),y1=Math.floor((y+m)/CELL);
+function inR(x,y,r){if(G.src){const O=G.src.owner||G.src;if(O.up&&O.up.area)r*=1+UPV.area*O.up.area}const out=[],m=r+46;const x0=Math.floor((x-m)/CELL),x1=Math.floor((x+m)/CELL),y0=Math.floor((y-m)/CELL),y1=Math.floor((y+m)/CELL);
   for(let cx=x0;cx<=x1;cx++)for(let cy=y0;cy<=y1;cy++){const a=grid.get(gk(cx,cy));if(!a)continue;for(const e of a){if(e.dead)continue;const dx=e.x-x,dy=e.y-y,rr=r+e.r;if(dx*dx+dy*dy<rr*rr)out.push(e)}}return out}
 function near(x,y,r,excl){let b=null,bd=r*r;for(const e of G.en){if(e.dead||e.prop||(excl&&excl.has(e)))continue;const dx=e.x-x,dy=e.y-y,d=dx*dx+dy*dy;if(d<bd){bd=d;b=e}}return b}
 function nearN(x,y,r,n){const a=[];for(const e of G.en){if(e.dead||e.prop)continue;const d=(e.x-x)**2+(e.y-y)**2;if(d<r*r)a.push([d,e])}a.sort((p,q)=>p[0]-q[0]);return a.slice(0,n).map(p=>p[1])}
@@ -1030,7 +1035,7 @@ function explode(x,y,r,d,col,quiet){for(const e of inR(x,y,r))hurt(e,d,{kb:60});
 function healP(v){if(v<=0)return;P.hp=Math.min(P.max,P.hp+v);part(P.x,P.y-10,'#6dff9e',3,80,3,.5)}
 
 /* ================= damage ================= */
-function hurt(e,d,o){if(!e||e.dead||d<=0)return 0;o=o||{};let v=d*G.dmgMul*(e.weak>0?G.weakMul:1)*(G.timeStop>0?1+G.tsDmg:1);if(G.src&&G.src.def){const q=SAVE.sd[G.src.def.id];if(q)v*=1+.01*q}if(!o.pa)v*=1-e.armor;if(G.buffT>0)v*=1.4;v=Math.max(1,Math.round(v*rnd(.9,1.1)));if(e.minT){v=Math.max(1,Math.min(v,Math.round(e.bud)));e.bud-=v}e.hp-=v;e.flash=.09;e.hitT=G.t;if(e.prop){kill(e);return v}if(G.src)G.src.dmg=(G.src.dmg||0)+Math.min(v,Math.max(0,e.hp+v));
+function hurt(e,d,o){if(!e||e.dead||d<=0)return 0;o=o||{};let v=d*G.dmgMul*(e.weak>0?G.weakMul:1)*(G.timeStop>0?1+G.tsDmg:1);if(G.src&&G.src.def){const q=SAVE.sd[G.src.def.id];if(q)v*=1+.01*q;const O=G.src.owner||G.src;if(O.up)v*=(1+UPV.pow*O.up.pow)*(G.src.mul||1);if(O.kokusen&&R()<.08){v*=2.5;kokusenFx(e)}}if(!o.pa)v*=1-e.armor;if(G.buffT>0)v*=1.4;v=Math.max(1,Math.round(v*rnd(.9,1.1)));if(e.minT){v=Math.max(1,Math.min(v,Math.round(e.bud)));e.bud-=v}e.hp-=v;e.flash=.09;e.hitT=G.t;if(e.prop){kill(e);return v}if(G.src){const O=G.src.owner||G.src;O.dmg=(O.dmg||0)+Math.min(v,Math.max(0,e.hp+v))}
   if(o.kb&&G.timeStop<=0){const a=Math.atan2(e.y-P.y,e.x-P.x),k=o.kb*(e.type==='boss'?.06:(e.type==='brute'||e.type==='elite')?.35:1)*4;e.kx+=Math.cos(a)*k;e.ky+=Math.sin(a)*k}
   numText(e.x+rnd(-8,8),e.y-e.r,v,o.pa?'#9fd8ff':v>=150?'#ffd23f':'#fff');if(e.hp<=0)kill(e);return v}
 const DEATH_SFX=['グシャッ','ブチィッ','ドパァッ','ザシュッ','祓除!','ボゴォッ'];
@@ -1040,7 +1045,7 @@ function kill(e){if(e.prop){breakMask(e);return}
   if(e.type==='splitter')for(let i=0;i<2;i++)spawnE('bat',e.x+rnd(-20,20),e.y+rnd(-20,20));
   // 自爆は本体の近くで倒した時だけ（周りの敵も巻き込む）
   else if(e.type==='bomber'&&(e.x-P.x)**2+(e.y-P.y)**2<380*380){G.hz.push({x:e.x,y:e.y,r:70,t:.6,max:.6,dmg:e.dmg*1.6,en:40,col:'#ff6fae'});shout(e.x,e.y-20,'自爆!','#ff6fae',24)}
-  else if(e.type==='thief'){for(let i=0;i<6;i++)dropGold(e.x+rnd(-20,20),e.y+rnd(-20,20),15);shout(e.x,e.y-40,'マネー奪還!!','#ffd23f',36);sfx('gold')}if(G.src)G.src.kills=(G.src.kills||0)+1;part(e.x,e.y,e.type==='brute'?'#c9a27a':'#b0207a',e.type==='boss'?40:7,e.type==='boss'?400:160,3.5,.5);
+  else if(e.type==='thief'){for(let i=0;i<6;i++)dropGold(e.x+rnd(-20,20),e.y+rnd(-20,20),15);shout(e.x,e.y-40,'マネー奪還!!','#ffd23f',36);sfx('gold')}if(G.src){const O=G.src.owner||G.src;O.kills=(O.kills||0)+1}part(e.x,e.y,e.type==='brute'?'#c9a27a':'#b0207a',e.type==='boss'?40:7,e.type==='boss'?400:160,3.5,.5);
   if(e.type==='boss'){if(e.final){G.finalKilled=true;if(needFinal(STAGES.indexOf(G.stage)))setTimeout(()=>bigText('ラスボス撃破!! 10:00まで生き延びればステージクリア','gold'),900)}G.bossKills++;SAVE.bossKills=(SAVE.bossKills||0)+1;saveData();checkCharUnlocks();dropGold(e.x,e.y+20,100);G.chests.push({x:e.x,y:e.y,ph:0});setTimeout(()=>shout(e.x,e.y-50,'呪物出現!!','#ffd23f',34),500);shout(e.x,e.y-40,'祓除!!','#ffd23f',56);explode(e.x,e.y,160,0,'#ffd23f');bigText('撃 破 !!','gold');G.shake=18;if(G.boss===e)G.boss=null}
   else{if(e.type==='elite'){G.chests.push({x:e.x,y:e.y,ph:0});shout(e.x,e.y-50,'呪物!!','#ffd23f',32);dropGold(e.x+12,e.y,25)}else{const gt=ET[e.type].gem||0;dropGem(e.x,e.y,gt);const gc=gt?.15:.04;if(R()<gc)dropGold(e.x+rnd(-8,8),e.y+rnd(-8,8),gt?5:1)}if(e.type==='elite'||R()<.025)shout(e.x,e.y-20,DEATH_SFX[(R()*DEATH_SFX.length)|0],'#ff8ad8',e.type==='elite'?40:26)}
   if(e.bomb>0){e.bomb=0;shout(e.x,e.y-20,'ボコォッ','#7ad8c8',34);const ps=G.src;G.src=e.bombSrc||ps;explode(e.x,e.y,e.bombR,e.bombD,'#ff6fae');G.src=ps}}
@@ -1097,7 +1102,7 @@ function mkStandSprite(d,idx){const c=document.createElement('canvas');c.width=1
 /* ================= 20 stands ================= */
 // 攻撃（CDリセット）時のみ術式を実体化させる
 function domainStart(name,col){G.domName=name;G.domCol=col||'#5ab8ff';sfx('tstop');fx({t:'tsring',x:P.x,y:P.y,life:.6,col:G.domCol});G.shake=Math.max(G.shake,6)}
-function cdm(s){s.vis=Math.max(s.vis||0,.75);return G.cdMul}
+function cdm(s){s.vis=Math.max(s.vis||0,.75);const O=s.owner||s;return G.cdMul*(O.up?Math.pow(UPV.cd,O.up.cd):1)}
 function aimAt(s,e){const a=Math.atan2(e.y-P.y,e.x-P.x);s.atk=.28;s.tx=e.x-Math.cos(a)*20;s.ty=e.y-Math.sin(a)*20}
 function say(s,x,y,t){if(s.sayT>0)return;s.sayT=2.4;shout(x,y,t,s.def.col,30)}
 function shoot(o){o.vx=Math.cos(o.a)*o.sp;o.vy=Math.sin(o.a)*o.sp;o.hit=new Set();o.pierce=o.pierce||0;o.max=o.life;o.rot=o.a;G.pr.push(o);return o}
@@ -1256,7 +1261,51 @@ const DEFS=[
 DEFS.forEach((d,i)=>{d.spr=mkStandSprite(d,i);d.img=d.spr.toDataURL()});
 $('marq').textContent=DEFS.map(d=>d.name+'「'+d.jp+'」').join('　✦　');
 
-function mkStand(def){return{get L(){return effLv(this.lv)},def,t0:G.t,dmg:0,kills:0,lv:1,cd:.4,sayT:0,atk:0,sx:P.x,sy:P.y-30,tx:0,ty:0,ang:R()*TAU,rush:0,rt:0,q:0,px:P.x,py:P.y}}
+function mkStand(def){return{get L(){return effLv(this.lv)},def,up:{pow:0,cd:0,area:0},skills:[],subs:[],who:null,t0:G.t,dmg:0,kills:0,lv:1,cd:.4,sayT:0,atk:0,sx:P.x,sy:P.y-30,tx:0,ty:0,ang:R()*TAU,rush:0,rt:0,q:0,px:P.x,py:P.y}}
+/* ================= 新システム：出撃キャラ＋サポート1人。レベルアップは「共通強化」か「新スキル」 ================= */
+const UP_MAX=10,SK_MAX=3,UPV={pow:.045,cd:.97,area:.05},SK_POW=.55;
+const UPS={lv:{id:'lv',n:'練度',sym:'練',col:'#e8dfc8',d:'術式の練度 +1（威力・数・範囲が総合的に伸びる）'},pow:{id:'pow',n:'攻撃力',sym:'力',col:'#ff5c6a',d:`このキャラの全攻撃（スキル含む）+${UPV.pow*100}%`},
+  cd:{id:'cd',n:'頻度',sym:'速',col:'#8ec8ff',d:`このキャラの攻撃間隔 -${Math.round((1-UPV.cd)*100)}%`},area:{id:'area',n:'効果範囲',sym:'広',col:'#7dd36a',d:`このキャラの攻撃範囲・弾の大きさ +${UPV.area*100}%`}};
+makeStatImgs(Object.values(UPS));
+// スキル：汎用（誰でも）と専用（ch のキャラのみ）。base の術式の動きを mul 倍の威力で借りる。練度は持ち主と同じ
+const SKILLS=[
+ {id:'kokusen',name:'黒閃',sym:'閃',col:'#e0303a',passive:1,desc:'このキャラの攻撃が8%の確率で黒い火花を散らし、ダメージ2.5倍'},
+ {id:'hanten',name:'反転術式',sym:'反',col:'#7dffb0',passive:1,desc:'負の呪力を反転させて肉体を治す。HP自然回復 +1.5/秒'},
+ {id:'kani',name:'簡易領域',sym:'簡',col:'#c8f0ff',base:'heaven',mul:.55,desc:'一定間隔で周囲に結界を張り、敵を弾き飛ばす衝撃波を放つ'},
+ {id:'jugu',name:'呪具投擲',sym:'具',col:'#cfd6e0',base:'silver',mul:.5,desc:'呪具を投げ放ち、直線上の敵を貫く'},
+ {id:'tobari',name:'結界術「帳」',sym:'帳',col:'#6a6aff',base:'violet',mul:.6,desc:'敵の群れに帳を下ろし、中の敵を蝕み弱体化させる'},
+ {id:'x_jin',ch:'jin',name:'逕路・爆ぜる蹴撃',sym:'蹴',col:'#ff4b3b',base:'diver',mul:.7,desc:'【専用】蹴りで呪力を流し込み、敵を内側から爆ぜさせる'},
+ {id:'x_nori',ch:'nori',name:'共鳴りの一撃',sym:'鳴',col:'#ff8a5c',base:'kiss',mul:.7,desc:'【専用】打ち込んだ釘が共鳴し、少し後に同じダメージをもう一度'},
+ {id:'x_pol',ch:'pol',name:'遊鉾・薙ぎ払い',sym:'薙',col:'#7dff9a',base:'fool',mul:.7,desc:'【専用】呪具を振り回し、扇状の敵をまとめて吹き飛ばす'},
+ {id:'x_dion',ch:'dion',name:'術式反転「紅」',sym:'紅',col:'#ff3348',base:'void',mul:.8,desc:'【専用】反転させた無限の斥力で、前方の敵を空間ごと吹き飛ばす'},
+ {id:'x_jo',ch:'jo',name:'呪力の大放出',sym:'放',col:'#ff5c8a',base:'hermit',mul:.7,desc:'【専用】底なしの呪力を放ち、複数の敵を同時に撃ち抜く'},
+ {id:'x_oku',ch:'oku',name:'拍手の連撃',sym:'連',col:'#5d7bff',base:'star',mul:.6,desc:'【専用】入れ替えた直後に拳の連打を叩き込む'},
+ {id:'x_rou',ch:'rou',name:'呪言「爆ぜろ」',sym:'爆',col:'#ffe066',base:'killer',mul:.7,desc:'【専用】呪言を浴びせた敵を、少し後に爆ぜさせる'},
+ {id:'x_kira',ch:'kira',name:'多重魂・撥体',sym:'撥',col:'#7ad8c8',base:'plankton',mul:.7,desc:'【専用】魂を練り合わせた改造人間を撃ち出し、着弾で破裂させる'},
+ {id:'x_haru',ch:'haru',name:'式神「鵺」',sym:'鵺',col:'#6a6aff',base:'weather',mul:.6,desc:'【専用】雷を帯びた鳥の式神が、画面内の敵に落雷を浴びせる'},
+ {id:'x_buchi',ch:'buchi',name:'鈍器の残業打',sym:'鈍',col:'#4fa8ff',base:'diamond',mul:.7,desc:'【専用】布を巻いた鈍器で重い一撃。命中数に応じて少し回復'},
+ {id:'x_mist',ch:'mist',name:'赤血・円刃',sym:'円',col:'#e0303a',base:'emerald',mul:.55,desc:'【専用】血を円刃にして全方位へ放つ'},
+ {id:'x_dia',ch:'dia',name:'斬撃・網斬り',sym:'網',col:'#e0002a',base:'zipper',mul:.8,desc:'【専用】直線上の敵を、見えない斬撃でまとめて切り裂く'},
+ {id:'x_rin',ch:'rin',name:'傀儡の追尾砲',sym:'砲',col:'#3dbfff',base:'cross',mul:.6,desc:'【専用】傀儡の砲口から敵を追う呪力弾を放つ'},
+ {id:'x_wes',ch:'wes',name:'雷撃の連打',sym:'撃',col:'#9ad0ff',base:'star',mul:.6,desc:'【専用】電荷を帯びた拳で、近くの敵へ連打を浴びせる'},
+ {id:'x_eru',ch:'eru',name:'構築弾・跳弾',sym:'跳',col:'#ff5c8a',base:'pistols',mul:.6,desc:'【専用】構築した弾丸が敵の間を跳ね返る'},
+ {id:'x_enri',ch:'enri',name:'呪霊操術・特攻',sym:'霊',col:'#c8f0ff',base:'parallel',mul:.7,desc:'【専用】取り込んだ呪霊を放ち、敵に喰らいつかせて自爆させる'},
+];
+makeStatImgs(SKILLS);
+function learnSkill(s,sk){s.skills.push(sk);if(sk.passive){s[sk.id]=true;return}
+  const base=DEFS.find(d=>d.id===sk.base),d=Object.assign({},base,{id:'sk_'+sk.id,col:sk.col,name:sk.name,plane:0}),b=mkStand(d);b.owner=s;b.mul=sk.mul*SK_POW;b.lv=s.lv;b.cd=1+R();s.subs.push(b)}
+function kokusenFx(e){fx({t:'ring',x:e.x,y:e.y,r0:6,r1:56,life:.25,col:'#e0303a',lw:6});part(e.x,e.y,'#100006',8,260,3,.3);part(e.x,e.y,'#ff2040',6,220,2.5,.3);if(R()<.35)shout(e.x,e.y-30,'黒閃!!','#ff2040',30)}
+// サポート候補：解放済みの出撃キャラ＋ステージで出会った術師・呪霊
+function supportCands(){if(G.st.length>=2)return[];const a=[];
+  for(const c of CHARS)if(c.id!==G.ch.id&&isUnlocked(c))a.push(c);
+  for(const n of NPCS)if(!n.as&&SAVE.found.includes(n.id))a.push(n);
+  return a.filter(p=>!G.banned.has('sp:'+p.id)&&!G.st.some(s=>s.def.id===p.stand))}
+function choicePool(){const pool=[];
+  for(const s of G.st){if(s.lv<MAXLV)pool.push({k:'up',s,u:'lv'});for(const u of['pow','cd','area'])if(s.up[u]<UP_MAX)pool.push({k:'up',s,u});
+    if(s.skills.length<SK_MAX)for(const sk of SKILLS)if(!s.skills.includes(sk)&&(!sk.ch||sk.ch===s.who.id)&&!G.banned.has('sk:'+sk.id))pool.push({k:'sk',s,sk})}
+  return pool}
+const roleOf=s=>s===G.st[0]?'出撃':'サポート';
+
 /* ================= シナジー：特定の術式を揃えると発動 ================= */
 const SYN=[
  {id:'p3',name:'呪術高専・東都校',tag:'東都校',col:'#5ab8ff',mem:['star','emerald','silver','time','diamond','door','golden','zipper','fool','nail'],
@@ -1294,7 +1343,7 @@ const TRAIN=[
  {id:'rev',sym:'蘇',col:'#ffffff',name:'復活',max:1,base:5600,per:'1プレイに1度、倒れてもHP50%で復活'},
  {id:'rer',sym:'転',col:'#ff8ad8',name:'リロール',max:3,base:700,per:'レベルアップの選び直し +1回'},
  {id:'skp',sym:'飛',col:'#9ad0ff',name:'スキップ',max:3,base:420,per:'レベルアップの見送り（HP10%回復）+1回'},
- {id:'ban',sym:'除',col:'#9a9a9a',name:'除外',max:3,base:700,per:'未所持術式をこのプレイから除外 +1回'},
+ {id:'ban',sym:'除',col:'#9a9a9a',name:'除外',max:3,base:700,per:'スキル・サポート候補をこのプレイから除外 +1回'},
 ];
 makeStatImgs(TRAIN);
 const puLv=id=>SAVE.pu[id]||0,puTotal=()=>TRAIN.reduce((a,t)=>a+puLv(t.id),0);
@@ -1327,7 +1376,7 @@ const ACH=[
  {id:'aw1',t:'開眼者',d:'術式を初めて開眼させた',v:()=>SAVE.awakened.length,n:1,m:200},
  {id:'aw2',t:'呪物に選ばれし者',d:'10種類の術式を開眼させた',v:()=>SAVE.awakened.length,n:10,m:1500},
  {id:'aw3',t:'全開眼の果て',d:'全28種の術式を開眼させた',v:()=>SAVE.awakened.length,n:28,m:8000},
- {id:'aw6',t:'六つの奥義',d:'1プレイで6つすべての術式を開眼させた',v:()=>CNT('aw6'),n:6,m:1500},
+ {id:'aw6',t:'二人の必殺技',d:'1プレイで出撃キャラとサポートの両方を開眼させた',v:()=>CNT('aw6'),n:2,m:1500},
  {id:'f1',t:'呪いは引かれ合う',d:'術師・呪霊を9人発見',v:()=>SAVE.found.length,n:9,m:300},
  {id:'f2',t:'呪術界の全貌',d:'術師・呪霊を27人全員発見',v:()=>SAVE.found.length,n:27,m:3000},
  {id:'c1',t:'仲間との出会い',d:'出撃キャラを8人解放',v:()=>SAVE.unlocked.length,n:8,m:500},
@@ -1361,7 +1410,7 @@ function recalc(){const h=G.st.find(s=>s.def.id==='heaven'),l=h?h.L:0,md=G.md,b=
   G.spdMul=(1+.05*l)*(md.spd||1)*(1+.04*b.spd)*(1+.05*u('spd'))*(1+e.spd)*(aw('silver')?1.12:1)*(aw('fool')?1.1:1);
   G.tsBonus=e.ts;G.tsDmg=e.tsdmg;
   const mx=G.ch.hp+15*b.hp+12*u('hp')+e.hp;if(mx>P.max)P.hp+=mx-P.max;P.max=mx;P.hp=Math.min(P.hp,P.max);
-  P.regen=(md.regen||0)+.3*b.reg+.2*u('reg')+e.reg+(aw('plankton')?2:0);
+  P.regen=(md.regen||0)+.3*b.reg+.2*u('reg')+e.reg+(aw('plankton')?2:0)+G.st.reduce((a,s)=>a+(s.hanten?1.5:0),0);
   // 新しく発動・段階アップしたシナジーを通知
   if(G.state!=='title')for(const id in act){if(!SAVE.synSeen.includes(id))SAVE.synSeen.push(id);if(!(id in G.synAct)||act[id]>G.synAct[id]){const y=SYN.find(s=>s.id===id);synNotice(y,act[id])}}
   G.synAct=act;G.synDirty=true}
@@ -1737,7 +1786,7 @@ function pickStage(i){const s=STAGES[i],el=$('slist').children[i];
   if(!el.classList.contains('confirm')){[...$('slist').children].forEach(x=>x.classList.remove('confirm'));el.classList.add('confirm');el.querySelector('.sst').textContent='もう一度タップで解放！';sfx('tick');return}
   SAVE.money-=s.price;SAVE.stages.push(s.id);saveData();sfx('gold');bigText(`STAGE ${i+1} 解放!!`,'gold');showStages(stageCh)}
 function startGame(ch,stg,hard,endless){initAudio();newGame(ch,stg,hard,endless);$('chars').classList.add('hidden');$('stages').classList.add('hidden');$('title').classList.add('hidden');$('over').classList.add('hidden');$('hud').classList.remove('hidden');
-  const d=DEFS.find(x=>x.id===G.ch.stand),s0=mkStand(d);s0.lv=Math.round(1+((G.ch.boost||0)+((SAVE.cm[G.ch.id]||0)>=3?1:0))*12/7);G.st.push(s0);recalc();G.slotDirty=true;cutin(d,'new');$('ctype').textContent=G.endless?`${G.ch.name} ─ 【ENDLESS】「${G.stage.name}」へ出陣！`:`${G.ch.name} ─ ${G.hard?'【HARD】':''}STAGE ${STAGES.indexOf(G.stage)+1}「${G.stage.name}」へ出陣！`}
+  const d=DEFS.find(x=>x.id===G.ch.stand),s0=mkStand(d);s0.who=G.ch;s0.lv=Math.round(1+((G.ch.boost||0)+((SAVE.cm[G.ch.id]||0)>=3?1:0))*12/7);G.st.push(s0);recalc();G.slotDirty=true;cutin(d,'new');$('ctype').textContent=G.endless?`${G.ch.name} ─ 【ENDLESS】「${G.stage.name}」へ出陣！`:`${G.ch.name} ─ ${G.hard?'【HARD】':''}STAGE ${STAGES.indexOf(G.stage)+1}「${G.stage.name}」へ出陣！`}
 $('startBtn').onclick=showChars;$('retryBtn').onclick=()=>startGame(G.ch,G.stage.id,G.hard,G.endless);$('charBack').onclick=()=>{$('chars').classList.add('hidden');showTitle()};
 $('stageBack').onclick=()=>{$('stages').classList.add('hidden');showChars()};
 const btnRow=$('retryBtn').parentNode,chBtn=document.createElement('button');chBtn.className='bigbtn sub';chBtn.textContent='キャラ選択';chBtn.onclick=showChars;btnRow.insertBefore(chBtn,$('toTitleBtn'));
@@ -1800,7 +1849,7 @@ function renderZukan(){$('ztabs').querySelectorAll('button').forEach(b=>b.classL
     if(!un&&!z.uses)return`<div class="tc lock zc" style="--c:#555"><img src="${d.img}" alt=""><div class="ti"><b>？？？</b><small>${npc?`「${stageOf(npc.stage).name}」に潜む術師に会うと解放`:'初期術式'}</small></div></div>`;
     return`<div class="tc zc ${aw?'mx':''}" style="--c:${d.col}"><img src="${d.img}" alt=""><div class="ti"><b>${d.name}${aw?' <em class="zaw">開眼</em>':''}</b><small>${TYPE_NAME[d.type]}「${d.jp}」${npc?'　─ '+npc.name:''}</small>
       <div class="zst"><span>累計ダメージ <b>${N(z.dmg||0)}</b></span><span>撃破 <b>${N(z.kills||0)}</b></span><span>最高 <b>${z.best?(z.best>=MAXLV?'MAX':'Lv'+z.best):'─'}</b></span><span>使用 <b>${z.uses||0}</b>回</span></div>
-      <small class="zaa">奥義：${aw?`<b>${AWAKE[d.id].name}</b> ─ ${AWAKE[d.id].desc}`:'？？？（Lv MAXで呪物に触れると判明）'}</small></div></div>`}).join('');
+      <small class="zaa">必殺技：${aw?`<b>${AWAKE[d.id].name}</b> ─ ${AWAKE[d.id].desc}`:'？？？（練度MAXで呪物に触れると判明）'}</small></div></div>`}).join('');
   else $('zlist').innerHTML=ACH.map(a=>{const got=SAVE.ach.includes(a.id),v=Math.min(a.n,a.v()),eq=SAVE.title===a.id;
     return`<div class="tc zc ${got?'mx':'zng'}" style="--c:${got?'#ffd23f':'#6a5a8a'}"><div class="zico">${got?'★':'☆'}</div><div class="ti"><b>「${a.t}」</b><small>${a.d}　報酬 ◎${a.m.toLocaleString()}</small>
       ${got?'':`<div class="zbar"><i style="width:${v/a.n*100}%"></i></div><small>${N(v)} / ${N(a.n)}</small>`}</div>
@@ -1819,7 +1868,7 @@ function renderPause(){$('pdet').classList.add('hidden');$('pmain').classList.re
     <div class="pgold">今回の獲得マネー <b>◎ ${Math.floor(G.gold)}</b></div>
     <button class="pauto ${SET.auto?'on':''}" id="pAuto">ステータス強化の自動選択：<b>${SET.auto?'ON':'OFF'}</b></button></div>`;
   $('pAuto').onclick=()=>{SET.auto=!SET.auto;saveSet();renderPause();sfx('tick')};
-  $('plist').innerHTML=G.st.map((s,i)=>`<button class="prow ${s.aw?'aw':''}" data-i="${i}" style="--c:${s.def.col}"><img src="${s.def.img}" alt=""><span class="pn"><b>${s.def.name}</b><small>${TYPE_NAME[s.def.type]}「${s.def.jp}」</small></span><span class="pl">${lvTxt(s)}</span><span class="pd">詳細を見る ▶</span></button>`).join('')||'<div class="pempty">術式なし</div>';
+  $('plist').innerHTML=G.st.map((s,i)=>`<button class="prow ${s.aw?'aw':''}" data-i="${i}" style="--c:${s.def.col}"><img src="${s.def.img}" alt=""><span class="pn"><b>${s.who.name}</b><small>${roleOf(s)}｜${s.def.name}「${s.def.jp}」｜スキル${s.skills.length}</small></span><span class="pl">${lvTxt(s)}</span><span class="pd">詳細を見る ▶</span></button>`).join('')||'<div class="pempty">術式なし</div>';
   const ids=G.st.map(s=>s.def.id);$('psyn').innerHTML=SYN.map(y=>{const{n,t}=synTier(y,ids);return`<div class="sr ${t>=0?'on':''}" style="--c:${y.col}"><div class="srh"><span class="stag ${t>=0?'on':''}">${y.tag}</span><b>${y.name}</b><em>${n}/${y.mem.length}</em></div>
     <div class="srm">${y.mem.map(m=>{const d=DEFS.find(x=>x.id===m);return`<img src="${d.img}" class="${ids.includes(m)?'own':''}" title="${d.name}" alt="">`}).join('')}</div>
     <div class="srt">${y.tiers.map((tr,i)=>`<span class="${i===t?'act':''}">${tr[0]}体：${tr[2]}</span>`).join('')}</div></div>`}).join('');
@@ -1828,68 +1877,82 @@ function showStandDetail(s){const d=s.def,A=AWAKE[d.id];let pips='';for(let k=1;
   $('pdet').style.setProperty('--c',d.col);
   $('pdet').innerHTML=`<div class="dtop"><img src="${d.img}" alt=""><div><div class="dtag">${TYPE_NAME[d.type]}</div><div class="dname">${d.name}</div><div class="djp">「${d.jp}」</div>
       <div class="dlv">${s.aw?'<b class="awb">開眼</b>':s.lv===MAXLV?'<b>LEVEL MAX</b>':`Lv <b>${s.lv}</b> / ${MAXLV}`}</div><div class="pips">${pips}</div></div></div>
-    <div class="dsec"><h4>現在の性能</h4><p>${dfmt(d.desc(s.L))}</p></div>
+    <div class="dsec"><h4>${roleOf(s)}：${s.who.name}</h4><p>${dfmt(d.desc(s.L))}</p></div>
+    <div class="dsec"><h4>共通強化</h4><p>練度 Lv${s.lv}/${MAXLV}　攻撃力 +${Math.round(UPV.pow*100*s.up.pow)}%　頻度 -${Math.round((1-Math.pow(UPV.cd,s.up.cd))*100)}%　効果範囲 +${Math.round(UPV.area*100*s.up.area)}%</p></div>
+    <div class="dsec"><h4>スキル（${s.skills.length} / ${SK_MAX}）</h4><p>${s.skills.map(k=>`<b style="color:${k.col}">${k.name}</b> ─ ${k.desc}`).join('<br>')||'まだ習得していない'}</p></div>
     ${s.lv<MAXLV?`<div class="dsec nx"><h4>次のレベル（Lv${s.lv+1}）</h4><p>${dfmt(d.desc(effLv(s.lv+1)))}</p></div>`:''}
-    <div class="dsec awk ${s.aw?'on':''}"><h4>奥義 ─ ${A.name}</h4><p>${A.desc}</p><div class="ast">${s.aw?'★ 開眼済み ─ 発動中':s.lv===MAXLV?'呪物に触れると開眼する！':'Lv MAX の状態で呪物に触れると開眼'}</div></div>
+    <div class="dsec awk ${s.aw?'on':''}"><h4>必殺技 ─ ${A.name}</h4><p>${A.desc}</p><div class="ast">${s.aw?'★ 開眼済み ─ 発動中':s.lv===MAXLV?'呪物に触れると開眼する！':'練度MAXの状態で呪物に触れると開眼し、必殺技を得る'}</div></div>
     <button class="bigbtn sub" id="pback">◀ 一覧へ戻る</button>`;
   $('pmain').classList.add('hidden');$('pdet').classList.remove('hidden');$('pause').scrollTop=0;$('pback').onclick=renderPause;sfx('tick')}
 
 function openChoice(start){
-  const pool=[];
-  for(const d of DEFS){if(G.banned.has(d.id))continue;const own=G.st.find(s=>s.def===d);if(own){if(own.lv<MAXLV)pool.push({d,own,next:own.lv+1})}else if(G.st.length<6&&standUnlocked(d.id))pool.push({d,own:null,next:1})}
-  // 全術式がMAX（＝選択肢なし）になったら基本ステータス強化を出す
-  const statMode=!pool.length;if(statMode)for(const st of STATS)pool.push({stat:st});
-  // 設定ONなら、全術式MAX後のステータス強化は自動で選ぶ
+  const pool=choicePool(),sp=supportCands(),statMode=!pool.length&&!sp.length;
   if(statMode&&SET.auto&&!start){autoStat();return}
-  // 枠が余っていても新術式に偏らないよう、所持術式の強化を最低1枠、残りも半々で混ぜる
-  let ch;if(statMode)ch=shuffle(pool).slice(0,3);
-  else{const ups=shuffle(pool.filter(c=>c.own)),news=shuffle(pool.filter(c=>!c.own));ch=[];
-    while(ch.length<3&&(ups.length||news.length))ch.push((ups.length&&(!news.length||!ch.some(c=>c.own)||R()<.5)?ups:news).shift());ch=shuffle(ch)}
+  let ch=[];
+  if(statMode)ch=shuffle(STATS.map(st=>({stat:st}))).slice(0,3);
+  else{if(sp.length)ch.push({k:'sp',p:sp[(R()*sp.length)|0]});
+    const sks=shuffle(pool.filter(c=>c.k==='sk')),ups=shuffle(pool.filter(c=>c.k==='up'));
+    // 専用スキルは少し出やすく
+    sks.sort((a,b)=>(b.sk.ch?1:0)-(a.sk.ch?1:0)+(R()-.5));
+    while(ch.length<3&&(sks.length||ups.length)){const useSk=sks.length&&(!ups.length||(R()<.38&&!ch.some(c=>c.k==='sk'&&c.s===sks[0].s)));ch.push((useSk?sks:ups).shift())}
+    ch=shuffle(ch)}
   G.choices=ch;G.choiceStart=start;G.focus=-1;
-  const hasMax=ch.some(c=>c.next===MAXLV);
-  $('lvTitle').textContent=start?'CURSED TECHNIQUE':'LEVEL UP!!';
-  $('lvSub').textContent=start?'あなたに宿る術式を選べ':statMode?`Lv ${G.lv}　─　全術式MAX！基本ステータスを強化`:`Lv ${G.lv}　─　術式枠 ${G.st.length} / 6`;
-  $('lvKak').textContent='★ LEVEL MAX 到達 ★';$('lvKak').classList.toggle('hidden',!hasMax);
-  $('cards').innerHTML=ch.map((c,i)=>{if(c.stat){const st=c.stat;return`<div class="card stat" style="--c:${st.col};--t:${st.col};animation-delay:${i*.09}s" data-i="${i}">
+  const hasMax=ch.some(c=>c.k==='up'&&c.u==='lv'&&c.s.lv+1===MAXLV);
+  $('lvTitle').textContent='LEVEL UP!!';
+  $('lvSub').textContent=statMode?`Lv ${G.lv}　─　全強化MAX！基本ステータスを強化`:`Lv ${G.lv}　─　${G.st.map(s=>s.who.name).join(' ＋ ')}${G.st.length<2?'　（サポート未参戦）':''}`;
+  $('lvKak').textContent='★ 練度MAX 到達 ★';$('lvKak').classList.toggle('hidden',!hasMax);
+  $('cards').innerHTML=ch.map((c,i)=>{const dl=`animation-delay:${i*.09}s`;
+    if(c.stat){const st=c.stat;return`<div class="card stat" style="--c:${st.col};--t:${st.col};${dl}" data-i="${i}">
       <div class="ctop"><span class="ctag">ステータス強化</span><span class="clv"><b>+${G.bonus[st.id]+1}</b></span></div>
       <div class="cart"><img src="${st.img}" alt=""></div><div class="cname">${st.name}</div><div class="cjp">「${st.jp}」</div>
       <div class="cdesc">${st.desc}<br><small>現在 +${G.bonus[st.id]}</small></div><div class="ckey">${i+1}</div></div>`}
-    const d=c.d;let pips='';for(let k=1;k<=MAXLV;k++)pips+=`<i class="${k<c.next?'on':k===c.next?'nx':''}"></i>`;
-    return`<div class="card ${c.next===MAXLV?'max':''}" style="--c:${d.col};--t:${TYPE_COL[d.type]};animation-delay:${i*.09}s" data-i="${i}">
-      <div class="ctop"><span class="ctag">${TYPE_NAME[d.type]}</span>${c.own?`<span class="clv">Lv${c.own.lv} → <b>${c.next===MAXLV?'MAX':c.next}</b></span>`:'<span class="cnew">NEW!</span>'}</div>
-      <div class="cart"><img src="${d.img}" alt=""><div class="csym">${d.sym}</div></div>
-      <div class="cname">${d.name}</div><div class="cjp">「${d.jp}」${synChips(d.id,!c.own)}</div>
-      <div class="cdesc">${dfmt(d.desc(effLv(c.next)))}</div><div class="pips">${pips}</div><div class="ckey">${i+1}</div></div>`}).join('');
+    if(c.k==='sp'){const p=c.p,d=DEFS.find(x=>x.id===p.stand);return`<div class="card sup" style="--c:${d.col};--t:${d.col};${dl}" data-i="${i}">
+      <div class="ctop"><span class="ctag">サポート参戦</span><span class="cnew">NEW!</span></div>
+      <div class="cart"><img src="${p.img}" alt=""></div><div class="cname">${p.name}</div><div class="cjp">${d.name}「${d.jp}」${synChips(d.id,true)}</div>
+      <div class="cdesc">${p.title}<br>${dfmt(d.desc(effLv(1)))}<br><small>サポートは1人だけ。参戦後は強化・スキル習得もできる</small></div><div class="ckey">${i+1}</div></div>`}
+    const s=c.s,who=`<span class="cwho"><img src="${s.who.img}" alt="">${roleOf(s)}：${s.who.name}</span>`;
+    if(c.k==='sk'){const sk=c.sk;return`<div class="card skill ${sk.ch?'max':''}" style="--c:${sk.col};--t:${s.def.col};${dl}" data-i="${i}">
+      <div class="ctop"><span class="ctag">${sk.ch?'専用スキル':'新スキル'}</span><span class="clv">${s.skills.length+1} / ${SK_MAX}</span></div>
+      <div class="cart"><img src="${sk.img}" alt=""></div><div class="cname">${sk.name}</div><div class="cjp">${who}</div>
+      <div class="cdesc">${sk.desc}${sk.base?'<br><small>威力は練度・攻撃力・頻度・範囲の強化に応じて伸びる</small>':''}</div><div class="ckey">${i+1}</div></div>`}
+    const U=UPS[c.u],cur=c.u==='lv'?s.lv:s.up[c.u],mx=c.u==='lv'?MAXLV:UP_MAX;let pips='';for(let k=1;k<=mx;k++)pips+=`<i class="${k<=cur?'on':k===cur+1?'nx':''}"></i>`;
+    return`<div class="card up ${c.u==='lv'&&cur+1===MAXLV?'max':''}" style="--c:${U.col};--t:${s.def.col};${dl}" data-i="${i}">
+      <div class="ctop"><span class="ctag">共通強化</span><span class="clv">Lv${cur} → <b>${cur+1===mx?'MAX':cur+1}</b></span></div>
+      <div class="cart"><img src="${U.img}" alt=""></div><div class="cname">${U.n} UP</div><div class="cjp">${who}</div>
+      <div class="cdesc">${U.d}${c.u==='lv'?`<br><small>${dfmt(s.def.desc(effLv(cur+1)))}</small>`:''}</div><div class="pips">${pips}</div><div class="ckey">${i+1}</div></div>`}).join('');
   [...$('cards').children].forEach(el=>{el.onclick=()=>pick(+el.dataset.i);setTimeout(()=>el.classList.add('ready'),380)});
   $('lvl').classList.remove('hidden');$('lvl').scrollTop=0;G.state='levelup';joy.on=false;if(!SET.joyFixed)$('joy').classList.add('hidden');lvBtns();sfx(hasMax?'gold':'lvl');
 }
 function pick(i){const c=G.choices[i];if(!c||G.state!=='levelup')return;
-  if(G.banMode){if(!c.d||c.own){bigText('所持中の術式は除外できない','red');return}G.banned.add(c.d.id);G.bans--;G.banMode=false;bigText(`${c.d.name} を除外`,'red');openChoice(false);return}
+  if(G.banMode){if(c.k==='sk')G.banned.add('sk:'+c.sk.id);else if(c.k==='sp')G.banned.add('sp:'+c.p.id);else{bigText('強化は除外できない','red');return}
+    G.bans--;G.banMode=false;bigText(`${c.k==='sk'?c.sk.name:c.p.name} を除外`,'red');openChoice(false);return}
   $('lvl').classList.add('hidden');if(!G.choiceStart)G.pend--;G.slotDirty=true;
   if(c.stat){G.bonus[c.stat.id]++;recalc();G.state='play';bigText(`${c.stat.jp} +${G.bonus[c.stat.id]}`,'gold');afterChoice()}
-  else if(!c.own){const s=mkStand(c.d);G.st.push(s);recalc();cutin(c.d,'new')}
-  else{const oa=c.d.act?c.d.act(c.own.L):0;c.own.lv++;recalc();G.state='play';
-    if(c.own.lv===MAXLV)bigText('LEVEL MAX!!','gold');else if(c.d.act&&c.d.act(c.own.L)!==oa)bigText('確変'+c.d.act(c.own.L)+'!!','pink');afterChoice()}}
+  else if(c.k==='sp'){const d=DEFS.find(x=>x.id===c.p.stand),s=mkStand(d);s.who=c.p;s.lv=Math.max(1,Math.floor(G.st[0].lv*.6));G.st.push(s);recalc();cutin(d,'sup',c.p)}
+  else if(c.k==='sk'){learnSkill(c.s,c.sk);recalc();G.state='play';bigText(`「${c.sk.name}」習得!!`,'gold long');sfx('gold');afterChoice()}
+  else{const s=c.s;if(c.u==='lv'){s.lv++;if(s.lv===MAXLV)bigText('練度MAX!! 呪物に触れて開眼','gold long')}else{s.up[c.u]++;bigText(`${UPS[c.u].n} UP!`,'gold')}recalc();G.state='play';afterChoice()}}
 function synChips(id,adding){const ids=G.st.map(s=>s.def.id);return synOf(id).map(y=>{const a=synTier(y,ids).t,b=adding?synTier(y,ids.concat(id)).t:a,hot=b>a;
   return`<span class="stag ${hot?'hot':''} ${b>=0?'on':''}" style="--c:${y.col}">${y.tag}${hot?(a>=0?' UP!':' 発動!'):''}</span>`}).join('')}
 function afterChoice(){if(G.pend>0)openChoice(false)}
 // mode: 'new'=術式発現 / 'aw'=開眼（呪物でのみ発生）
-function cutin(d,mode){G.state='cutin';const el=$('cutin'),isAw=mode==='aw';el.className='';void el.offsetWidth;el.className='show'+(isAw?' max':'');el.style.setProperty('--c',d.col);
-  $('cimg').src=d.img;$('ctype').textContent=isAw?'★ 開眼 ─ AWAKENING ★':'術式発現 ─ '+TYPE_NAME[d.type];$('cname').textContent=d.name;$('cjp').textContent='「'+d.jp+'」';$('ccry').textContent=isAw?'奥義「'+AWAKE[d.id].name+'」':d.cry;
+function cutin(d,mode,p){G.state='cutin';const el=$('cutin'),isAw=mode==='aw';el.className='';void el.offsetWidth;el.className='show'+(isAw?' max':'');el.style.setProperty('--c',d.col);
+  $('cimg').src=d.img;$('ctype').textContent=isAw?'★ 開眼 ─ AWAKENING ★':'術式発現 ─ '+TYPE_NAME[d.type];$('cname').textContent=d.name;$('cjp').textContent='「'+d.jp+'」';$('ccry').textContent=isAw?'必殺技「'+AWAKE[d.id].name+'」':d.cry;
+  if(mode==='sup'&&p){$('cimg').src=p.img;$('ctype').textContent='★ サポート参戦 ★';$('cname').textContent=p.name;$('cjp').textContent=`${d.name}「${d.jp}」`;$('ccry').textContent=d.cry}
   G.cutT=G.cutMax=isAw?2.2:1.5;sfx(isAw?'gold':'cut')}
 function endCutin(){if(G.state!=='cutin')return;$('cutin').className='';if(G.cutQ.length){cutin(G.cutQ.shift(),'aw');return}G.state='play';if(G.comboFx){const f=G.comboFx;G.comboFx=null;f()}afterChoice()}
 
 /* ---- 呪物（ボス・エリートが落とす）：80%で1進化 / 16%で3進化 / 4%で5進化
    進化先：Lv上昇 or（Lv MAX かつ未開眼なら）開眼。全て開眼済み＆枠が埋まっていれば基本ステータス+1 ---- */
 let CH=null;
-function rollChest(){const r=R(),n=r<.8?1:r<.96?3:5,inc=new Map(),awk=new Set(),res=[],lvOf=s=>s.lv+(inc.get(s)||0);
-  // 開眼は「呪物に触れた時点で Lv MAX」の術式だけ（同じ呪物でMAXになった分は対象外）
-  const wasMax=new Set(G.st.filter(s=>s.lv>=MAXLV&&!s.aw));
-  for(let k=0;k<n;k++){const el=G.st.filter(s=>lvOf(s)<MAXLV||(wasMax.has(s)&&!awk.has(s)));
-    if(el.length){const s=el[(R()*el.length)|0],l=lvOf(s);if(l<MAXLV){inc.set(s,(inc.get(s)||0)+1);res.push({s,from:l,to:l+1})}else{awk.add(s);res.push({s,aw:true})}}
-    else if(G.st.length<6&&DEFS.some(d=>standUnlocked(d.id)&&!G.st.some(x=>x.def===d))){const un=DEFS.filter(d=>standUnlocked(d.id)&&!G.st.some(x=>x.def===d)),s=mkStand(un[(R()*un.length)|0]);s.lv=0;G.st.push(s);inc.set(s,1);res.push({s,from:0,to:1})}
+function rollChest(){const r=R(),n=r<.8?1:r<.96?3:5,awk=new Set(),res=[];
+  // 開眼は「呪物に触れた時点で練度MAX」のキャラだけ
+  const wasMax=G.st.filter(s=>s.lv>=MAXLV&&!s.aw);
+  for(let k=0;k<n;k++){const a=wasMax.find(s=>!awk.has(s));if(a){awk.add(a);res.push({s:a,aw:true});continue}
+    const opts=[];for(const s of G.st){if(s.lv<MAXLV)opts.push([s,'lv'],[s,'lv']);for(const u of['pow','cd','area'])if(s.up[u]<UP_MAX)opts.push([s,u])}
+    if(opts.length){const[s,u]=opts[(R()*opts.length)|0];if(u==='lv'){res.push({s,u,from:s.lv,to:s.lv+1});s.lv++}else{res.push({s,u,from:s.up[u],to:s.up[u]+1});s.up[u]++}}
     else{const st=STATS[(R()*STATS.length)|0];G.bonus[st.id]++;res.push({stat:st})}}
-  for(const[s,v]of inc)s.lv+=v;for(const s of awk){s.aw=true;SAVE.awakened=SAVE.awakened||[];if(!SAVE.awakened.includes(s.def.id))SAVE.awakened.push(s.def.id)}if(awk.size){saveData();checkCharUnlocks()}recalc();G.slotDirty=true;return{n,res}}
+  for(const s of awk){s.aw=true;SAVE.awakened=SAVE.awakened||[];if(!SAVE.awakened.includes(s.def.id))SAVE.awakened.push(s.def.id)}if(awk.size){saveData();checkCharUnlocks()}recalc();G.slotDirty=true;return{n,res}}
+const chestLbl=r=>r.aw?'開眼!!':r.u==='lv'?(r.to===MAXLV?'練度MAX!':`練度${r.from}→${r.to}`):`${UPS[r.u].n}+1`;
 function chestLater(ms,f){CH.tm.push(setTimeout(f,ms))}
 function openChest(){G.state='chest';joy.on=false;$('joy').classList.add('hidden');
   const{n,res}=rollChest();CH={n,res,tm:[],iv:[],stopped:0,done:false};cntAdd('chests',1);if(n===5)cntAdd('ev5',1);
@@ -1913,12 +1976,12 @@ function startReels(){if(!CH||CH.done||$('reels').children.length)return;const i
 function stopReel(i){if(!CH)return;const d=$('reels').children[i];if(!d||d.classList.contains('stop'))return;clearInterval(CH.iv[i]);const r=CH.res[i];
   void d.offsetWidth;d.classList.add('stop');
   if(r.stat){d.style.setProperty('--c',r.stat.col);d.querySelector('img').src=r.stat.img;d.querySelector('.rl').textContent=r.stat.jp+'+1'}
-  else{d.style.setProperty('--c',r.s.def.col);d.querySelector('img').src=r.s.def.img;d.querySelector('.rl').textContent=r.aw?'開眼!!':r.from===0?'NEW!':r.to===MAXLV?'MAX!':`Lv${r.from}→${r.to}`;if(r.aw){d.classList.add('aw');G.shake=10;sfx('gold')}}
+  else{d.style.setProperty('--c',r.s.def.col);d.querySelector('img').src=r.s.def.img;d.querySelector('.rl').textContent=chestLbl(r);if(r.aw){d.classList.add('aw');G.shake=10;sfx('gold')}}
   ding(i);CH.stopped++;if(CH.stopped===CH.res.length)chestLater(450,chestResults)}
 function chestResults(){if(!CH||CH.done)return;CH.done=true;$('chest').classList.add('res');$('cskip').classList.add('hidden');
   const agg=new Map(),sts=new Map();
-  for(const r of CH.res){if(r.stat){sts.set(r.stat,(sts.get(r.stat)||0)+1);continue}const a=agg.get(r.s)||{};if(r.aw)a.aw=true;else{if(a.from===undefined)a.from=r.from;a.to=r.to}agg.set(r.s,a)}
-  $('cres').innerHTML=[...agg].map(([s,a],i)=>`<div class="rr ${a.aw?'aw':''}" style="--c:${s.def.col};animation-delay:${i*.08}s"><img src="${s.def.img}" alt=""><b>${s.def.name}</b><span>${a.aw?`開眼「${AWAKE[s.def.id].name}」`:`${a.from===0?'NEW':'Lv'+a.from} → ${a.to===MAXLV?'MAX':'Lv'+a.to}`}</span></div>`).join('')
+  for(const r of CH.res){if(r.stat){sts.set(r.stat,(sts.get(r.stat)||0)+1);continue}const a=agg.get(r.s)||{l:[]};if(r.aw)a.aw=true;else a.l.push(chestLbl(r));agg.set(r.s,a)}
+  $('cres').innerHTML=[...agg].map(([s,a],i)=>`<div class="rr ${a.aw?'aw':''}" style="--c:${s.def.col};animation-delay:${i*.08}s"><img src="${s.def.img}" alt=""><b>${s.who.name}</b><span>${a.aw?`開眼 ─ 必殺技「${AWAKE[s.def.id].name}」`:a.l.join('・')}</span></div>`).join('')
     +[...sts].map(([st,n])=>`<div class="rr" style="--c:${st.col}"><img src="${st.img}" alt=""><b>${st.jp}</b><span>+${n}（計 +${G.bonus[st.id]}）</span></div>`).join('');
   $('chestOk').classList.remove('hidden');sfx('win')}
 function skipChest(){if(!CH||CH.done)return;CH.tm.forEach(clearTimeout);CH.tm=[];chestOpen();startReels();for(let i=0;i<CH.res.length;i++)stopReel(i);chestResults()}
@@ -2030,10 +2093,10 @@ function meetSecret(c){G.secrets=G.secrets.filter(x=>x!==c);joy.on=false;
   if(!SAVE.found.includes(c.id))SAVE.found.push(c.id);if(!standUnlocked(c.stand))SAVE.stands.push(c.stand);saveData();checkCharUnlocks();
   const d=DEFS.find(x=>x.id===c.stand);let joined=false;
   // 空き枠があればその場で仲間入り
-  if(G.st.length<6&&!G.st.some(s=>s.def===d)){G.st.push(mkStand(d));recalc();G.slotDirty=true;joined=true}
+  if(G.st.length<2&&!G.st.some(s=>s.def===d)){const s=mkStand(d);s.who=c.as?CHARS.find(x=>x.id===c.as):c;G.st.push(s);recalc();G.slotDirty=true;joined=true}
   G.state='cutin';const el=$('cutin');el.className='';void el.offsetWidth;el.className='show max meet';el.style.setProperty('--c',d.col);
   $('cimg').src=c.img;$('ctype').textContent='★ SECRET ─ 術師発見!! ★';$('cname').textContent=c.name;$('cjp').textContent='「'+c.title+'」';
-  $('ccry').textContent=`術式「${d.name}」解放${joined?' ─ 仲間に加わった!':''}`;G.cutT=G.cutMax=2.8;sfx('gold');sfx('boss')}
+  $('ccry').textContent=`サポート候補に追加${joined?' ─ サポートとして参戦!':''}`;G.cutT=G.cutMax=2.8;sfx('gold');sfx('boss')}
 function drawSecret(c){const x=c.pos.x,y=c.pos.y,p=.5+.3*Math.sin(G.t*4);
   const bg=ctx.createLinearGradient(0,y-300,0,y);bg.addColorStop(0,'rgba(200,20,42,0)');bg.addColorStop(1,`rgba(200,20,42,${.25+.25*p})`);ctx.fillStyle=bg;ctx.fillRect(x-22,y-300,44,300);
   ctx.fillStyle='rgba(200,20,42,.3)';ctx.beginPath();ctx.ellipse(x,y+16,26+6*p,8,0,0,TAU);ctx.fill();
@@ -2178,7 +2241,9 @@ function update(rdt){
     // 与ダメージ集計のため、この術式が生んだ弾・領域に発生元を記録
     G.src=s;const pl=G.pr.length,zl=G.zn.length;
     s.def.upd(s,dt);if(s.aw){if(s.revT>0)s.revT-=dt;const A=AWAKE[s.def.id];if(A.upd)A.upd(s,dt)}if(s.rush>0)s.vis=Math.max(s.vis,.3);
-    for(let k=pl;k<G.pr.length;k++)G.pr[k].src??=s;for(let k=zl;k<G.zn.length;k++)G.zn[k].src??=s;G.src=null;
+    for(let k=pl;k<G.pr.length;k++)G.pr[k].src??=s;for(let k=zl;k<G.zn.length;k++)G.zn[k].src??=s;
+    for(const b of s.subs){b.lv=s.lv;b.sayT=9;G.src=b;const p2=G.pr.length,z2=G.zn.length;b.def.upd(b,dt);for(let k=p2;k<G.pr.length;k++)G.pr[k].src??=b;for(let k=z2;k<G.zn.length;k++)G.zn[k].src??=b}
+    if(s.up.area){const A=1+UPV.area*s.up.area;for(let k=pl;k<G.pr.length;k++)G.pr[k].r*=A;for(let k=zl;k<G.zn.length;k++)if(G.zn[k].r<400)G.zn[k].r*=A}G.src=null;
     if(s.vis>0){if(hid){s.sx=P.x;s.sy=P.y-8;s.pop=0;if(!s.def.plane)fx({t:'ring',x:P.x,y:P.y-8,r0:6,r1:34,life:.22,col:s.def.col,lw:3})}s.vis-=dt;s.pop+=dt}
     const i=G.st.indexOf(s),n=G.st.length,a=-Math.PI/2+(i-(n-1)/2)*.62,ax=P.x+Math.cos(a)*40-P.face*8,ay=P.y+Math.sin(a)*30-8+Math.sin(G.t*3+i)*3;
     const tx=s.atk>0?s.tx:ax,ty=s.atk>0?s.ty:ay,k=1-Math.exp(-dt*(s.atk>0?22:10));s.sx+=(tx-s.sx)*k;s.sy+=(ty-s.sy)*k}
