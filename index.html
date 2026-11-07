@@ -832,7 +832,10 @@ const MAXLV=13,effLv=r=>1+(r-1)*7/12;
 // 説明文の端数を整える（10以上は整数、未満は小数1桁）
 const dfmt=t=>t.replace(/\d+\.\d+/g,m=>{const v=+m;return v>=10?String(Math.round(v)):String(+v.toFixed(1))});
 const TYPE_NAME=['近距離型','遠距離・範囲型','特殊型'],TYPE_COL=['#ff5c8a','#3dd6ff','#ffd23f'];
-const xpNeed=l=>Math.floor((5+l*4+Math.pow(l,1.6))*.7*1.25*(l<10?.7+.03*l:1));
+// XP_K：レベルアップ頻度の調整（大きいほど上がりにくい）。その分、1回の強化は UP_STEP 段階ぶん上がる
+const XP_K=4.5,UP_STEP=2;
+const xpNeed=l=>Math.floor((5+l*4+Math.pow(l,1.6))*.7*1.25*(l<10?.7+.03*l:1)*XP_K);
+const stepDesc=t=>t.replace(/(\d+(?:\.\d+)?)/,n=>String(+(n*UP_STEP).toFixed(1)));
 let BEST=0;try{BEST=+localStorage.getItem('cursedSurvBest')||0}catch(e){}
 // セーブ：所持マネーと解放状況（最初は星野ジンのみ）。ステージは今後マネーで解放する想定
 let SAVE={unlocked:['jin'],stands:['star'],found:[],money:0,stages:['s1'],pu:{},cm:{}};try{const s=JSON.parse(localStorage.getItem('cursedSurvSave')||'null');if(s&&Array.isArray(s.unlocked))SAVE=Object.assign(SAVE,s)}catch(e){}
@@ -1256,8 +1259,8 @@ function mkStand(def){return{get L(){return effLv(Math.min(this.lv,MAXLV))},def,
    スキル・開眼は、そのキャラの強化値が条件に届いた瞬間に自動で習得する ================= */
 const UPV={pow:.06,cd:.04,area:.06,lvx:.08},SK_POW=.55;
 const cdRed=s=>1/(1+UPV.cd*s.up.cd);
-const UPS={lv:{id:'lv',n:'練度',sym:'練',col:'#e8dfc8',d:`術式の練度 +1（威力・数・範囲が総合的に伸びる。${MAXLV}を超えた分は攻撃力 +${UPV.lvx*100}%ずつ）`},pow:{id:'pow',n:'攻撃力',sym:'力',col:'#ff5c6a',d:`このキャラの全攻撃（スキル含む）+${UPV.pow*100}%`},
-  cd:{id:'cd',n:'頻度',sym:'速',col:'#8ec8ff',d:'このキャラの攻撃間隔を短縮（強化するほど速くなる）'},area:{id:'area',n:'効果範囲',sym:'広',col:'#7dd36a',d:`このキャラの攻撃範囲・弾の大きさ +${UPV.area*100}%`}};
+const UPS={lv:{id:'lv',n:'練度',sym:'練',col:'#e8dfc8',d:`術式の練度 +${UP_STEP}（威力・数・範囲が総合的に伸びる。${MAXLV}を超えた分は攻撃力 +${UPV.lvx*100}%ずつ）`},pow:{id:'pow',n:'攻撃力',sym:'力',col:'#ff5c6a',d:`このキャラの全攻撃（スキル含む）+${Math.round(UPV.pow*100*UP_STEP)}%`},
+  cd:{id:'cd',n:'頻度',sym:'速',col:'#8ec8ff',d:'このキャラの攻撃間隔を短縮（強化するほど速くなる）'},area:{id:'area',n:'効果範囲',sym:'広',col:'#7dd36a',d:`このキャラの攻撃範囲・弾の大きさ +${Math.round(UPV.area*100*UP_STEP)}%`}};
 makeStatImgs(Object.values(UPS));
 // req：習得条件（練度・攻撃力・頻度・効果範囲の強化値）。reqCh：キャラ別の条件
 const SKILLS=[
@@ -1306,14 +1309,14 @@ function joinSupport(p,s){s.who=p;G.st.push(s);const m=p.mods||{},md=G.md;for(co
 const UP_W=['lv','lv','pow','cd','area'];
 function upCard(s,ex){const o=UP_W.filter(u=>u!==ex);return{k:'up',s,u:o[(R()*o.length)|0]}}
 // 札に添える「この強化で何が起きるか」
-function hintFor(s,u){const t={lv:s.lv,...s.up};t[u]++;const ok=r=>Object.keys(r).every(k=>t[k]>=r[k]),h=[];
+function hintFor(s,u){const t={lv:s.lv,...s.up};t[u]+=UP_STEP;const ok=r=>Object.keys(r).every(k=>t[k]>=r[k]),h=[];
   for(const sk of skillsFor(s))if(!s.skills.includes(sk)&&afterOk(s,sk)&&ok(reqOf(s,sk)))h.push(`<b class="hn" style="color:${sk.col}">★「${sk.name}」を習得！</b>`);
   if(!s.aw&&!s.awReady&&ok(awReq(s))&&skillsFor(s).every(k=>s.skills.includes(k)))h.push(`<b class="hn" style="color:#ff6b7a">★ 開眼条件クリア（呪物で開眼）</b>`);
   if(!h.length){let best=null;const cand=skillsFor(s).filter(sk=>!s.skills.includes(sk)&&afterOk(s,sk)).map(sk=>[sk.name,reqOf(s,sk)]);if(!s.aw&&!s.awReady)cand.push(['開眼条件',awReq(s)]);
     for(const[n,r]of cand){if(!(u in r))continue;const need=Object.keys(r).reduce((a,k)=>a+Math.max(0,r[k]-t[k]),0);if(!best||need<best[0])best=[need,n]}
     if(best)h.push(`<small class="hn">あと${best[0]}で「${best[1]}」</small>`)}
   return h.join('<br>')}
-const willAw=c=>{if(c.k!=='up'||c.s.aw||c.s.awReady)return false;const t={lv:c.s.lv,...c.s.up},r=awReq(c.s);t[c.u]++;return Object.keys(r).every(k=>t[k]>=r[k])};
+const willAw=c=>{if(c.k!=='up'||c.s.aw||c.s.awReady)return false;const t={lv:c.s.lv,...c.s.up},r=awReq(c.s);t[c.u]+=UP_STEP;return Object.keys(r).every(k=>t[k]>=r[k])};
 const roleOf=s=>s===G.st[0]?'出撃':'サポート';
 
 /* ================= シナジー：特定の術式を揃えると発動 ================= */
@@ -2025,18 +2028,18 @@ function openChoice(start){
   $('lvKak').textContent='★ 開眼条件まであと1 ★';$('lvKak').classList.toggle('hidden',!hasAw);
   $('cards').innerHTML=ch.map((c,i)=>{const dl=`animation-delay:${i*.09}s`;
     if(c.stat){const st=c.stat;return`<div class="card stat" style="--c:${st.col};--t:${st.col};${dl}" data-i="${i}">
-      <div class="ctop"><span class="ctag">共通ステータス</span><span class="clv"><b>+${G.bonus[st.id]+1}</b></span></div>
+      <div class="ctop"><span class="ctag">共通ステータス</span><span class="clv"><b>+${G.bonus[st.id]+UP_STEP}</b></span></div>
       <div class="cart"><img src="${st.img}" alt=""></div><div class="cname">${st.jp} UP</div><div class="cjp">出撃・サポート共通</div>
-      <div class="cdesc">${st.desc}<br><small>現在 +${G.bonus[st.id]}</small></div><div class="ckey">${i+1}</div></div>`}
+      <div class="cdesc">${stepDesc(st.desc)}<br><small>現在 +${G.bonus[st.id]}</small></div><div class="ckey">${i+1}</div></div>`}
     if(c.k==='sp'){const p=c.p,d=DEFS.find(x=>x.id===p.stand);return`<div class="card sup" style="--c:${d.col};--t:${d.col};${dl}" data-i="${i}">
       <div class="ctop"><span class="ctag">サポート参戦</span><span class="cnew">NEW!</span></div>
       <div class="cart"><img src="${p.img}" alt=""></div><div class="cname">${p.name}</div><div class="cjp">${d.name}「${d.jp}」${synChips(d.id,true)}</div>
       <div class="cdesc">${p.title}<br>${dfmt(d.desc(effLv(Math.max(1,Math.floor(M.lv*.6)))))}<br><small>★ ${p.pas}　サポートは1人だけ。参戦後はサポート強化の札が出る</small></div><div class="ckey">${i+1}</div></div>`}
     const s=c.s,who=`<span class="cwho"><img src="${s.who.img}" alt="">${s.who.name}</span>`,U=UPS[c.u],cur=sv(s,c.u);
     return`<div class="card up ${willAw(c)?'max':''}" style="--c:${U.col};--t:${s.def.col};${dl}" data-i="${i}">
-      <div class="ctop"><span class="ctag">${roleOf(s)}キャラ強化</span><span class="clv">${cur} → <b>${cur+1}</b></span></div>
+      <div class="ctop"><span class="ctag">${roleOf(s)}キャラ強化</span><span class="clv">${cur} → <b>${cur+UP_STEP}</b></span></div>
       <div class="cart"><img src="${U.img}" alt=""></div><div class="cname">${U.n} UP</div><div class="cjp">${who}</div>
-      <div class="cdesc">${U.d}${c.u==='lv'&&cur<MAXLV?`<br><small>${dfmt(s.def.desc(effLv(cur+1)))}</small>`:''}<br>${hintFor(s,c.u)}</div><div class="ckey">${i+1}</div></div>`}).join('');
+      <div class="cdesc">${U.d}${c.u==='lv'&&cur<MAXLV?`<br><small>${dfmt(s.def.desc(effLv(Math.min(MAXLV,cur+UP_STEP))))}</small>`:''}<br>${hintFor(s,c.u)}</div><div class="ckey">${i+1}</div></div>`}).join('');
   [...$('cards').children].forEach(el=>{el.onclick=()=>pick(+el.dataset.i);setTimeout(()=>el.classList.add('ready'),380)});
   $('lvl').classList.remove('hidden');$('lvl').scrollTop=0;G.state='levelup';joy.on=false;if(!SET.joyFixed)$('joy').classList.add('hidden');lvBtns();sfx(hasAw?'gold':'lvl');
 }
@@ -2044,9 +2047,9 @@ function pick(i){const c=G.choices[i];if(!c||G.state!=='levelup')return;
   if(G.banMode){if(c.k==='sp')G.banned.add('sp:'+c.p.id);else{bigText('強化は除外できない','red');return}
     G.bans--;G.banMode=false;bigText(`${c.p.name} を除外`,'red');openChoice(false);return}
   $('lvl').classList.add('hidden');if(!G.choiceStart)G.pend--;G.slotDirty=true;
-  if(c.stat){G.bonus[c.stat.id]++;recalc();bigText(`${c.stat.jp} +${G.bonus[c.stat.id]}`,'gold')}
+  if(c.stat){G.bonus[c.stat.id]+=UP_STEP;recalc();bigText(`${c.stat.jp} +${G.bonus[c.stat.id]}`,'gold')}
   else if(c.k==='sp'){const d=DEFS.find(x=>x.id===c.p.stand),s=mkStand(d);s.lv=Math.max(1,Math.floor(G.st[0].lv*.6));joinSupport(c.p,s);checkLearn(s);G.cutQ.push(...G.awQ.splice(0));cutin(d,'sup',c.p);return}
-  else{const s=c.s;if(c.u==='lv')s.lv++;else s.up[c.u]++;bigText(`${s.who.name.split(' ')[1]}　${UPS[c.u].n} ${sv(s,c.u)}`,'gold');checkLearn(s);recalc()}
+  else{const s=c.s;if(c.u==='lv')s.lv+=UP_STEP;else s.up[c.u]+=UP_STEP;bigText(`${s.who.name.split(' ')[1]}　${UPS[c.u].n} ${sv(s,c.u)}`,'gold');checkLearn(s);recalc()}
   resume()}
 function synChips(id,adding){const ids=G.st.map(s=>s.def.id);return synOf(id).map(y=>{const a=synTier(y,ids).t,b=adding?synTier(y,ids.concat(id)).t:a,hot=b>a;
   return`<span class="stag ${hot?'hot':''} ${b>=0?'on':''}" style="--c:${y.col}">${y.tag}${hot?(a>=0?' UP!':' 発動!'):''}</span>`}).join('')}
@@ -2064,7 +2067,7 @@ let CH=null;
 // 呪物：開眼条件を満たしたキャラがいれば開眼。それ以外は強化値をランダムに上げる（80%で1回 / 16%で3回 / 4%で5回）
 function rollChest(){const r=R(),n=r<.8?1:r<.96?3:5,res=[],rdy=G.st.filter(s=>s.awReady&&!s.aw),pk=G.st.map(s=>s.skills.length);
   for(let k=0;k<n;k++){const a=rdy.shift();if(a){awaken(a);res.push({s:a,aw:true});continue}
-    const s=G.st[(R()*G.st.length)|0],u=UP_W[(R()*UP_W.length)|0],from=sv(s,u);if(u==='lv')s.lv++;else s.up[u]++;res.push({s,u,from,to:from+1})}
+    const s=G.st[(R()*G.st.length)|0],u=UP_W[(R()*UP_W.length)|0],from=sv(s,u);if(u==='lv')s.lv+=UP_STEP;else s.up[u]+=UP_STEP;res.push({s,u,from,to:from+UP_STEP})}
   G.st.forEach(checkLearn);G.st.forEach((s,i)=>{for(const sk of s.skills.slice(pk[i]))res.push({s,sk})});
   recalc();G.slotDirty=true;return{n,res}}
 const chestLbl=r=>r.aw?'開眼!!':r.sk?'「'+r.sk.name+'」習得':`${UPS[r.u].n}${r.from}→${r.to}`;
@@ -2264,7 +2267,7 @@ function drawMap(){const mc=$('mapcv'),sz=Math.min(innerWidth-32,innerHeight-190
 
 /* ================= レベルアップ補助：リロール／スキップ／除外 ================= */
 // 全術式MAX後の基本ステータス強化：ランダムに1つ選んで適用
-function autoStat(){const st=STATS[(R()*STATS.length)|0];G.pend--;G.bonus[st.id]++;recalc();G.state='play';G.slotDirty=true;bigText(`${st.jp} +${G.bonus[st.id]}`,'gold');sfx('lvl');if(G.pend>0)openChoice(false)}
+function autoStat(){const st=STATS[(R()*STATS.length)|0];G.pend--;G.bonus[st.id]+=UP_STEP;recalc();G.state='play';G.slotDirty=true;bigText(`${st.jp} +${G.bonus[st.id]}`,'gold');sfx('lvl');if(G.pend>0)openChoice(false)}
 // 「自動選択」ボタン：以後のステータス強化も自動にする（ポーズ画面・設定で切替可）
 function doAuto(){if(G.state!=='levelup'||G.choiceStart||!G.choices.every(c=>c.stat))return;SET.auto=true;saveSet();G.banMode=false;$('lvl').classList.add('hidden');
   bigText('自動選択 ON ─ 以後も自動（ポーズ画面で切替）','cyan');autoStat()}
