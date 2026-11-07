@@ -15,7 +15,7 @@ window.botRun=function(cfg){return new Promise(done=>{
   const step=()=>{
     for(let f=0;f<900;f++){
       if(G.state==='cutin'){endCutin();continue}
-      if(G.state==="levelup"){const c=G.choices;let i=c.findIndex(x=>x.k==="sp");if(i<0)i=c.findIndex(x=>x.k==="sk"&&(x.sk.ch||!x.sk.passive||x.sk.id==="kokusen"));if(i<0)i=c.findIndex(x=>x.k==="up"&&x.u==="lv");if(i<0)i=c.findIndex(x=>x.k==="up"&&x.u==="pow");if(i<0)i=c.findIndex(x=>x.k==="up");if(i<0)i=0;pick(i);continue}
+      if(G.state==="levelup"){const c=G.choices;let i=c.findIndex(x=>x.k==="sp");if(i<0)i=c.findIndex(x=>x.k==="up"&&hintFor(x.s,x.u).includes("★"));if(i<0)i=(G.lv%3===0&&c[2]&&c[2].k==="up")?2:(G.lv%5===0?0:1);pick(i);continue}
       if(G.state==='chest'){G.state='play'}
       if(G.state!=="play"){if(G.state==="done"||G.t>=(cfg.maxT||600))break;G.state="play"}
       // 操縦：敵から離れ、近くの経験値・矢尻へ寄る
