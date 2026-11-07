@@ -656,6 +656,15 @@ a.bigbtn.more{background:linear-gradient(180deg,#14306e,#0a1636);border-color:rg
 .cwho img{height:28px;width:28px;object-fit:cover;object-position:50% 12%;border:1px solid rgba(232,223,200,.4);background:#0c0f17}
 .card.sup .cart img{height:110px;filter:drop-shadow(0 0 10px var(--c))}
 .card.up .cart img,.card.skill .cart img{height:84px}
+/* キャラ選択：サポート一覧 */
+#suph{margin:22px 0 10px;letter-spacing:.06em}
+#clist2{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:1160px;width:100%}
+.ch.sup{width:138px;padding-bottom:8px;cursor:default}
+.ch.sup .pt{height:104px}.ch.sup .pt img{height:104px}
+.ch.sup .nm{font-size:15px;padding:0 8px}.ch.sup .en,.ch.sup .tt{padding:0 8px;font-size:10.5px}
+.ch.sup .sd{margin:0 8px}.ch.sup .sd img{height:22px}.ch.sup .sd b{font-size:11px}.ch.sup .sd small{font-size:10px}
+.ch.sup .ps{margin:4px 8px 0;font-size:11px}
+@media (max-width:520px){.ch.sup{width:calc(50% - 6px)}}
 /* スクロールバー */
 ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#2a3044}::-webkit-scrollbar-track{background:#07080d}
 </style>
@@ -697,7 +706,7 @@ a.bigbtn.more{background:linear-gradient(180deg,#14306e,#0a1636);border-color:rg
 <div id="chars" class="ov hidden"><div class="rays"></div><div class="inner">
   <h2>CHOOSE YOUR FIGHTER</h2><div class="sub">出陣する術師を選べ ─ 未解放のキャラはマネーで解放できる</div>
   <div class="money">所持マネー <b id="cmoney">◎ 0</b></div>
-  <div id="clist"></div>
+  <div id="clist"></div><div class="sub" id="suph">SUPPORT ─ サポートキャラ（レベルアップの選択肢に登場。参戦は1プレイ1人）</div><div id="clist2"></div>
   <button class="bigbtn sub back" id="charBack">戻る</button></div>
 </div>
 
@@ -870,7 +879,7 @@ const AWAKE={
    for(let i=-1;i<=1;i++)shoot({x:P.x,y:P.y,a:b+i*.35,sp:650,r:5,dmg:13+4*s.L,life:.7,kind:'pbullet',col:s.def.col,bn:8,trail:1,
      onHit(p,t){if(p.bn<=0)return false;const nx=near(t.x,t.y,260,p.hit);if(!nx)return false;p.bn--;const a=Math.atan2(nx.y-t.y,nx.x-t.x);p.x=t.x;p.y=t.y;p.vx=Math.cos(a)*p.sp;p.vy=Math.sin(a)*p.sp;p.rot=a;p.life=.6;return true}})}},
  plankton:{name:'水底の再生',desc:'湧き出る海水が本体を癒し続ける（HP自然回復 +2/秒）'},
- violet:{name:'澱みの衣',desc:'本体の周囲90に常に毒の触手を纏い、触れた敵を蝕み弱体化させる',
+ violet:{name:'帳の二重下ろし',desc:'本体の周囲90に常に小さな帳を纏い、触れた敵を蝕み弱体化させる',
   upd(s,dt){if(!s.cloud||s.cloud.dead){s.cloud={x:P.x,y:P.y,r:90,life:1e9,max:1e9,tick:.3,tt:0,dmg:6+2*s.L,kind:'virus',col:s.def.col,upd(z){z.x=P.x;z.y=P.y},onHit:(z,t)=>{t.weak=Math.max(t.weak,1)}};G.zn.push(s.cloud)}s.cloud.dmg=6+2*s.L}},
  cross:{name:'領域展開「灼熱の鉄囲」',desc:'5秒毎に追尾する火礫10発を全方位へ放つ',
   upd(s,dt){if((s.awT=(s.awT??5)-dt)>0)return;s.awT=5;if(!near(P.x,P.y,450))return;const lv=s.L,c=s.def.col;for(let i=0;i<10;i++)shoot({x:P.x,y:P.y,a:i/10*TAU,sp:260,r:10,dmg:20+5*lv,life:2.4,kind:'ankh',col:c,homing:4.5,trail:1,onHit(p){explode(p.x,p.y,40,6+2*lv,c,1);return false}});bigText('灼熱の鉄囲!!','red')}},
@@ -903,85 +912,78 @@ const AWAKE={
  echoes:{name:'超新星・血の雨',desc:'5秒毎に周囲200の敵へ腐蝕の血を浴びせ、3秒間 動きを封じる（行動停止＋ダメージ）',
   upd(s,dt){if((s.awT=(s.awT??5)-dt)>0)return;s.awT=5;if(!near(P.x,P.y,200))return;for(const e of inR(P.x,P.y,200)){e.stun=Math.max(e.stun||0,3);hurt(e,35+10*s.L)}shout(P.x,P.y-60,'腐り落ちろ!!','#c8304a',32);G.shake=8;sfx('boom')}},
  moody:{name:'鴉の大群',desc:'鴉の残影が2体同時に現れる'},
+ shoko:{name:'反転術式・他者治療',desc:'仲間の傷を治し続ける（HP自然回復 +3/秒）'},
  diver:{name:'瑞獣の加護',desc:'瑞獣が本体に宿って守り、被ダメージ -25%'},
 };
 // 通知が同時に複数出たら重ならないよう下へ積む
 function pushNotice(d){const old=[...$('fxl').querySelectorAll('.unlock')];if(old.length>=4){const h=old[0].offsetHeight+10;old[0].remove();old.slice(1).forEach(o=>o.style.marginTop=Math.max(0,(parseFloat(o.style.marginTop)||0)-h)+'px')}let y=0;$('fxl').querySelectorAll('.unlock').forEach(o=>y=Math.max(y,(parseFloat(o.style.marginTop)||0)+o.offsetHeight+10));d.style.marginTop=y+'px';$('fxl').appendChild(d);setTimeout(()=>d.remove(),4200)}
-function unlockNotice(c){const d=document.createElement('div');d.className='unlock';d.innerHTML=`<img src="${c.img}" alt=""><div><small>NEW CHARACTER UNLOCKED!!</small><b>${c.name}</b><span>${DEFS.find(x=>x.id===c.stand).name} を携えて参戦可能</span></div>`;
+function unlockNotice(c){const d=document.createElement('div');d.className='unlock';d.innerHTML=`<img src="${c.img}" alt=""><div><small>NEW CHARACTER UNLOCKED!!</small><b>${c.name}</b><span>${c.role==='sup'?'サポートとしてレベルアップの選択肢に登場':DEFS.find(x=>x.id===c.stand).name+' を携えて出撃可能'}</span></div>`;
   pushNotice(d);sfx('gold')}
 
 /* ================= 出撃キャラ 16体（3〜6部・各4体） =================
    unlock: init=初期 / money=マネー購入 / meet=その術師に会う / awaken=その術式を開眼 / found=発見数 / boss=ボス累計撃破 */
 const LOOK={
  jin:{style:'pomp',coat:'#14183a',hair:'#e88a9a',acc:'#ff4b3b'},dion:{style:'tower',coat:'#10142a',hair:'#f2f6ff',acc:'#5ab8ff'},
- nori:{style:'bob',coat:'#14183a',hair:'#c86a3a',acc:'#ff8ad8'},pol:{style:'long',coat:'#1a2a20',hair:'#1f3a2a',acc:'#7dff9a'},
- jo:{style:'fringe',coat:'#e8e8f0',hair:'#1a1a22',acc:'#ff5c8a'},kira:{style:'long',coat:'#3a4a5a',hair:'#8aa0b0',acc:'#7ad8c8'},
- rou:{style:'cap',coat:'#14183a',hair:'#e8e8f0',acc:'#ffe066'},oku:{style:'pomp',coat:'#2a2a3a',hair:'#1a1410',acc:'#5d7bff'},
- haru:{style:'tower',coat:'#14183a',hair:'#0e0e14',acc:'#6a6aff'},buchi:{style:'fringe',coat:'#c8b080',hair:'#e8d080',acc:'#4fa8ff'},
- mist:{style:'long',coat:'#2a1a1a',hair:'#1a1410',acc:'#e0303a'},dia:{style:'pomp',coat:'#e8e0d0',hair:'#ff9aa8',acc:'#e0002a'},
- rin:{style:'cap',coat:'#4a4a5a',hair:'#3a3a40',acc:'#3dbfff'},enri:{style:'long',coat:'#1a1a1a',hair:'#141418',acc:'#c8f0ff'},
- wes:{style:'tower',coat:'#2a3a6a',hair:'#9ad0ff',acc:'#9ad0ff'},eru:{style:'bob',coat:'#2a2a3a',hair:'#2a3a2a',acc:'#ff5c8a'},
+ dia:{style:'pomp',coat:'#e8e0d0',hair:'#ff9aa8',acc:'#e0002a'},jo:{style:'fringe',coat:'#e8e8f0',hair:'#1a1a22',acc:'#ff5c8a'},
+ enri:{style:'long',coat:'#1a1a1a',hair:'#141418',acc:'#c8f0ff'},haru:{style:'tower',coat:'#14183a',hair:'#0e0e14',acc:'#6a6aff'},
+ nori:{style:'bob',coat:'#14183a',hair:'#c86a3a',acc:'#ff8ad8'},oku:{style:'pomp',coat:'#2a2a3a',hair:'#1a1410',acc:'#5d7bff'},
+ rou:{style:'cap',coat:'#14183a',hair:'#e8e8f0',acc:'#ffe066'},iji:{style:'fringe',coat:'#1a1a22',hair:'#2a2a2a',acc:'#6a6aff'},
+ pol:{style:'long',coat:'#1a2a20',hair:'#1f3a2a',acc:'#7dff9a'},buchi:{style:'fringe',coat:'#c8b080',hair:'#e8d080',acc:'#4fa8ff'},
+ mist:{style:'long',coat:'#2a1a1a',hair:'#1a1410',acc:'#e0303a'},eru:{style:'bob',coat:'#2a2a3a',hair:'#2a3a2a',acc:'#ff5c8a'},
+ rin:{style:'cap',coat:'#4a4a5a',hair:'#3a3a40',acc:'#3dbfff'},wes:{style:'tower',coat:'#2a3a6a',hair:'#9ad0ff',acc:'#9ad0ff'},
+ pan:{style:'dog',coat:'#1a1a1a',hair:'#f0f0f0',acc:'#d8c8b0'},kin:{style:'pomp',coat:'#e8e8e8',hair:'#c8b070',acc:'#ff8ad8'},
+ cho:{style:'tower',coat:'#3a1a2a',hair:'#1a1014',acc:'#c8304a'},mei:{style:'long',coat:'#1a1a2a',hair:'#e8e8f0',acc:'#8a6bff'},
+ kas:{style:'long',coat:'#2a3a6a',hair:'#8ac8ff',acc:'#e6e6e6'},momo:{style:'bob',coat:'#2a2a3a',hair:'#e8c860',acc:'#9ad0ff'},
+ ino:{style:'cap',coat:'#2a2a3a',hair:'#2a1a12',acc:'#ff8ad8'},sho:{style:'long',coat:'#e8e8f0',hair:'#3a2a20',acc:'#9dffd0'},
 };
-// 陣営（旧「〇部」）：キャラ選択・シナジーのタグに使う
+// role：'main'=出撃キャラ（8人）／'sup'=サポート（16人。レベルアップの選択肢に登場し、参戦中は mods の効果）
+// part：陣営（キャラ選択の表示用）
 const CHARS=[
- {id:'jin',part:'東都校',name:'虎堂 ユウ',en:'YU TORADO',title:'呪いの王を宿した少年',stand:'star',hp:150,pas:'全術式の攻撃力 +20%',mods:{dmg:1.2},unlock:{init:1}},
- {id:'nori',part:'東都校',name:'釘宮 ノバ',en:'NOVA KUGIMIYA',title:'田舎を飛び出した鉄槌の少女',stand:'emerald',hp:130,pas:'獲得経験値 +25%・攻撃力 +8%',mods:{xp:1.25,dmg:1.08},unlock:{meet:'emerald'}},
- {id:'pol',part:'東都校',name:'禅野 マキ',en:'MAKI ZENNO',title:'呪力なき天与の武人',stand:'silver',hp:140,pas:'本体の移動速度 +15%・攻撃力 +5%',mods:{spd:1.15,dmg:1.05},unlock:{meet:'silver'}},
- {id:'dion',part:'東都校',name:'六条 ソラ',en:'SORA ROKUJO',title:'目隠しをした現代最強',stand:'time',hp:180,pas:'攻撃力 +25%・HP自然回復 +2/秒・初期術式Lv4',mods:{dmg:1.25,regen:2},boost:2,unlock:{awaken:'time'}},
- {id:'jo',part:'東都校',name:'乙瀬 ユウタ',en:'YUTA OTOSE',title:'特級の呪いに愛された青年',stand:'diamond',hp:160,pas:'HPが毎秒 2.5 自然回復・初期術式Lv3',mods:{regen:2.5},boost:1,unlock:{money:1000}},
- {id:'oku',part:'西京校',name:'東道 アオ',en:'AO TODO',title:'親友を求める筋骨の巨漢',stand:'void',hp:165,pas:'全術式の攻撃力 +15%',mods:{dmg:1.15},unlock:{meet:'void'}},
- {id:'rou',part:'東都校',name:'狗守 トゲ',en:'TOGE INUMORI',title:'語彙がおにぎりの具の呪言師',stand:'door',hp:155,pas:'獲得経験値 +20%・攻撃力 +8%・初期術式Lv4',mods:{xp:1.2,dmg:1.08},boost:2,unlock:{found:12}},
- {id:'kira',part:'特級',name:'真継 ヒト',en:'HITO MATSUGU',title:'魂を弄ぶ継ぎ接ぎの呪霊',stand:'killer',hp:150,pas:'全術式のクールダウン -18%',mods:{cd:.82},unlock:{awaken:'killer'}},
- {id:'haru',part:'東都校',name:'伏影 メグ',en:'MEGU FUSEKAGE',title:'影を従える寡黙な少年',stand:'golden',hp:135,pas:'全術式のクールダウン -15%',mods:{cd:.85},unlock:{money:1900}},
- {id:'buchi',part:'東都校',name:'七瀬 ケイ',en:'KEI NANASE',title:'残業を嫌う脱サラ術師',stand:'zipper',hp:150,pas:'全術式のクールダウン -12%',mods:{cd:.88},unlock:{meet:'zipper'}},
- {id:'mist',part:'西京校',name:'賀茂野 ノリ',en:'NORI KAMONO',title:'血を矢に変える名家の嫡男',stand:'pistols',hp:140,pas:'獲得経験値 +15%・攻撃力 +10%',mods:{xp:1.15,dmg:1.1},unlock:{meet:'pistols'}},
- {id:'dia',part:'特級',name:'宿祢 オウ',en:'OU SUKUNE',title:'千年前に君臨した呪いの王',stand:'crimson',hp:170,pas:'全術式の攻撃力 +30%・初期術式Lv3',mods:{dmg:1.3},boost:1,unlock:{awaken:'crimson'}},
- {id:'rin',part:'西京校',name:'牟田 コウ',en:'KOU MUTA',title:'傀儡を遠隔で操る少年',stand:'stone',hp:150,pas:'全術式の攻撃力 +17%',mods:{dmg:1.17},unlock:{money:3100}},
- {id:'wes',part:'呪詛師',name:'鹿雲 ハジメ',en:'HAJIME SHIKAGUMO',title:'強者を求め時を越えた雷',stand:'weather',hp:145,pas:'本体の移動速度 +13%・攻撃力 +5%',mods:{spd:1.13,dmg:1.05},unlock:{meet:'weather'}},
- {id:'eru',part:'西京校',name:'禅野 マイ',en:'MAI ZENNO',title:'銃を携えた双子の妹',stand:'kiss',hp:155,pas:'全術式のクールダウン -13%',mods:{cd:.87},unlock:{boss:20}},
- {id:'enri',part:'呪詛師',name:'夏渡 ゲン',en:'GEN NATSUWATARI',title:'百鬼を従える最悪の呪詛師',stand:'heaven',hp:160,pas:'クールダウン -18%・移動速度 +15%・初期術式Lv3',mods:{cd:.82,spd:1.15},boost:1,unlock:{awaken:'heaven'}},
+ {id:'jin',role:'main',part:'東都校',name:'虎堂 ユウ',en:'YU TORADO',title:'呪いの王を宿した少年',stand:'star',hp:165,pas:'全攻撃の攻撃力 +20%',mods:{dmg:1.2},unlock:{init:1}},
+ {id:'haru',role:'main',part:'東都校',name:'伏影 メグ',en:'MEGU FUSEKAGE',title:'影を従える寡黙な少年',stand:'golden',hp:140,pas:'全攻撃のクールダウン -15%',mods:{cd:.85},unlock:{money:1000}},
+ {id:'nori',role:'main',part:'東都校',name:'釘宮 ノバ',en:'NOVA KUGIMIYA',title:'田舎を飛び出した鉄槌の少女',stand:'emerald',hp:160,pas:'獲得経験値 +25%・攻撃力 +12%',mods:{xp:1.25,dmg:1.12},unlock:{money:1900}},
+ {id:'oku',role:'main',part:'西京校',name:'東道 アオ',en:'AO TODO',title:'親友を求める筋骨の巨漢',stand:'void',hp:190,pas:'全攻撃の攻撃力 +28%・クールダウン -10%',mods:{dmg:1.28,cd:.9},unlock:{meet:'void'}},
+ {id:'jo',role:'main',part:'東都校',name:'乙瀬 ユウタ',en:'YUTA OTOSE',title:'特級の呪いに愛された青年',stand:'diamond',hp:160,pas:'HPが毎秒 2.5 自然回復・初期練度アップ',mods:{regen:2.5},boost:1,unlock:{boss:20}},
+ {id:'dion',role:'main',part:'東都校',name:'六条 ソラ',en:'SORA ROKUJO',title:'目隠しをした現代最強',stand:'time',hp:180,pas:'攻撃力 +25%・HP自然回復 +2/秒・初期練度アップ',mods:{dmg:1.25,regen:2},boost:2,unlock:{meet:'time'}},
+ {id:'dia',role:'main',part:'特級',name:'宿祢 オウ',en:'OU SUKUNE',title:'千年前に君臨した呪いの王',stand:'crimson',hp:170,pas:'全攻撃の攻撃力 +30%・初期練度アップ',mods:{dmg:1.3},boost:1,unlock:{meet:'crimson'}},
+ {id:'enri',role:'main',part:'呪詛師',name:'夏渡 ゲン',en:'GEN NATSUWATARI',title:'百鬼を従える最悪の呪詛師',stand:'heaven',hp:160,pas:'クールダウン -18%・移動速度 +15%・初期練度アップ',mods:{cd:.82,spd:1.15},boost:1,unlock:{meet:'heaven'}},
+ // ---- サポート 16人 ----
+ {id:'rou',role:'sup',part:'東都校',name:'狗守 トゲ',en:'TOGE INUMORI',title:'語彙がおにぎりの具の呪言師',stand:'door',pas:'参戦中：獲得経験値 +10%',mods:{xp:1.1},unlock:{init:1}},
+ {id:'iji',role:'sup',part:'補助監督',name:'伊知見 キヨ',en:'KIYO ICHIMI',title:'胃痛に耐える補助監督',stand:'violet',pas:'参戦中：獲得マネー +20%',mods:{gold:1.2},unlock:{init:1}},
+ {id:'pan',role:'sup',part:'東都校',name:'熊野 パン',en:'PAN KUMANO',title:'三つの核を持つ呪骸',stand:'fool',pas:'参戦中：HP自然回復 +0.8/秒',mods:{regen:.8},unlock:{meet:'fool'}},
+ {id:'sho',role:'sup',part:'東都校',name:'家守 ショウ',en:'SHO IEMORI',title:'他人を治せる唯一の医師',stand:'shoko',pas:'参戦中：HP自然回復 +1.5/秒',mods:{regen:1.5},unlock:{meet:'shoko'}},
+ {id:'pol',role:'sup',part:'東都校',name:'禅野 マキ',en:'MAKI ZENNO',title:'呪力なき天与の武人',stand:'silver',pas:'参戦中：移動速度 +8%',mods:{spd:1.08},unlock:{meet:'silver'}},
+ {id:'ino',role:'sup',part:'一級',name:'猪狩 タク',en:'TAKU IKARI',title:'瑞獣を降ろす二級術師',stand:'diver',pas:'参戦中：HP自然回復 +0.5/秒',mods:{regen:.5},unlock:{meet:'diver'}},
+ {id:'buchi',role:'sup',part:'一級',name:'七瀬 ケイ',en:'KEI NANASE',title:'残業を嫌う脱サラ術師',stand:'zipper',pas:'参戦中：攻撃力 +6%',mods:{dmg:1.06},unlock:{meet:'zipper'}},
+ {id:'mei',role:'sup',part:'一級',name:'冥月 メイ',en:'MEI MEIGETSU',title:'金に煩い一級術師',stand:'moody',pas:'参戦中：獲得マネー +25%',mods:{gold:1.25},unlock:{meet:'moody'}},
+ {id:'mist',role:'sup',part:'西京校',name:'賀茂野 ノリ',en:'NORI KAMONO',title:'血を矢に変える名家の嫡男',stand:'pistols',pas:'参戦中：獲得経験値 +8%',mods:{xp:1.08},unlock:{meet:'pistols'}},
+ {id:'eru',role:'sup',part:'西京校',name:'禅野 マイ',en:'MAI ZENNO',title:'銃を携えた双子の妹',stand:'kiss',pas:'参戦中：クールダウン -5%',mods:{cd:.95},unlock:{meet:'kiss'}},
+ {id:'rin',role:'sup',part:'西京校',name:'牟田 コウ',en:'KOU MUTA',title:'傀儡を遠隔で操る少年',stand:'stone',pas:'参戦中：攻撃力 +5%',mods:{dmg:1.05},unlock:{meet:'stone'}},
+ {id:'kas',role:'sup',part:'西京校',name:'三和 カスミ',en:'KASUMI MIWA',title:'貧乏な刀使いの少女',stand:'disc',pas:'参戦中：クールダウン -4%',mods:{cd:.96},unlock:{meet:'disc'}},
+ {id:'momo',role:'sup',part:'西京校',name:'西岸 モモ',en:'MOMO NISHIGISHI',title:'箒で空を駆ける先輩',stand:'aero',pas:'参戦中：移動速度 +5%',mods:{spd:1.05},unlock:{meet:'aero'}},
+ {id:'kin',role:'sup',part:'東都校',name:'賭場 キン',en:'KIN TOBA',title:'停学中の熱いギャンブラー',stand:'nail',pas:'参戦中：獲得マネー +15%',mods:{gold:1.15},unlock:{meet:'nail'}},
+ {id:'wes',role:'sup',part:'受肉体',name:'鹿雲 ハジメ',en:'HAJIME SHIKAGUMO',title:'強者を求め時を越えた雷',stand:'weather',pas:'参戦中：移動速度 +6%・攻撃力 +4%',mods:{spd:1.06,dmg:1.04},unlock:{meet:'weather'}},
+ {id:'cho',role:'sup',part:'受肉体',name:'血染 チョウ',en:'CHO CHIZOME',title:'弟想いの呪胎の長兄',stand:'echoes',pas:'参戦中：攻撃力 +8%',mods:{dmg:1.08},unlock:{meet:'echoes'}},
 ];
-CHARS.forEach(c=>c.look=LOOK[c.id]);
+CHARS.forEach(c=>{c.look=LOOK[c.id];c.hp=c.hp||150});
 
-/* ================= 術式をくれる術師・呪霊 27体（縁のあるステージに潜む） =================
-   出撃キャラと同一人物の場合は as で見た目・名前を共有する */
-const NPCS=[
- {id:'n_emerald',as:'nori',stand:'emerald'},{id:'n_silver',as:'pol',stand:'silver'},
- {id:'n_hermit',name:'樹霊 ハナ',title:'森を慈しむ特級呪霊',stand:'hermit',look:{style:'long',coat:'#e8e0c8',hair:'#3a6a2a',acc:'#7dd36a'}},
- {id:'n_cross',name:'火山 ジョウ',title:'大地を憂う火山頭の呪霊',stand:'cross',look:{style:'tower',coat:'#4a2a1a',hair:'#3a2a2a',acc:'#ff4b2b'}},
- {id:'n_fool',name:'熊野 パン',title:'三つの核を持つ呪骸',stand:'fool',look:{style:'dog',coat:'#1a1a1a',hair:'#f0f0f0',acc:'#d8c8b0'}},
- {id:'n_void',as:'oku',stand:'void'},
- {id:'n_echoes',name:'血染 チョウ',title:'弟想いの呪胎の長兄',stand:'echoes',look:{style:'tower',coat:'#3a1a2a',hair:'#1a1014',acc:'#c8304a'}},
- {id:'n_diamond',as:'jo',stand:'diamond'},
- {id:'n_aero',name:'西岸 モモ',title:'箒で空を駆ける先輩',stand:'aero',look:{style:'bob',coat:'#2a2a3a',hair:'#e8c860',acc:'#9ad0ff'}},
- {id:'n_zipper',as:'buchi',stand:'zipper'},{id:'n_pistols',as:'mist',stand:'pistols'},{id:'n_golden',as:'haru',stand:'golden'},
- {id:'n_violet',name:'吉住 ジュン',title:'孤独を抱えた映画好きの少年',stand:'violet',look:{style:'fringe',coat:'#2a2a3a',hair:'#2a2a30',acc:'#b84dff'}},
- {id:'n_moody',name:'冥月 メイ',title:'金に煩い一級術師',stand:'moody',look:{style:'long',coat:'#1a1a2a',hair:'#e8e8f0',acc:'#8a6bff'}},
- {id:'n_door',as:'rou',stand:'door'},
- {id:'n_stone',as:'rin',stand:'stone'},{id:'n_weather',as:'wes',stand:'weather'},{id:'n_kiss',as:'eru',stand:'kiss'},
- {id:'n_plankton',name:'深淵 ダゴ',title:'海を夢見る特級呪霊',stand:'plankton',look:{style:'bob',coat:'#8a3a2a',hair:'#c86a4a',acc:'#3dd6ff'}},
- {id:'n_diver',name:'猪狩 タク',title:'瑞獣を降ろす二級術師',stand:'diver',look:{style:'cap',coat:'#2a2a3a',hair:'#2a1a12',acc:'#ff8ad8'}},
- {id:'n_killer',as:'kira',stand:'killer'},
- {id:'n_disc',name:'三和 カスミ',title:'貧乏な刀使いの少女',stand:'disc',look:{style:'long',coat:'#2a3a6a',hair:'#8ac8ff',acc:'#e6e6e6'}},
- {id:'n_nail',name:'賭場 キン',title:'停学中の熱いギャンブラー',stand:'nail',look:{style:'pomp',coat:'#e8e8e8',hair:'#c8b070',acc:'#ff8ad8'}},
- {id:'n_crimson',as:'dia',stand:'crimson'},
- {id:'n_parallel',name:'偽夏 ケン',title:'額に縫い目のある男',stand:'parallel',look:{style:'long',coat:'#2a2a2a',hair:'#141418',acc:'#3dffe0'}},
- {id:'n_time',as:'dion',stand:'time'},{id:'n_heaven',as:'enri',stand:'heaven'},
-];
-NPCS.forEach(n=>{if(n.as){const c=CHARS.find(x=>x.id===n.as);n.name=c.name;n.title=c.title;n.look=c.look}});
+/* ================= ステージに潜むキャラ（会うと解放。サポートは空きがあればその場で参戦） ================= */
+const NPCS=[['s1','pan'],['s1','sho'],['s2','pol'],['s2','ino'],['s3','buchi'],['s3','mei'],['s4','oku'],['s4','mist'],['s4','eru'],['s4','rin'],['s4','kas'],['s4','momo'],['s5','kin'],['s5','wes'],['s6','cho'],['s7','dia'],['s8','dion'],['s9','enri']].map(([st,as])=>({id:'n_'+as,as,st}));
+NPCS.forEach(n=>{const c=CHARS.find(x=>x.id===n.as);n.name=c.name;n.title=c.title;n.look=c.look;n.stand=c.stand});
 
-/* ================= 9ステージ（後ろほど高難度・各人物は縁のある場所に潜む。強キャラの術式は後半） ================= */
+/* ================= 9ステージ（後ろほど高難度） ================= */
 const STAGES=[
- {id:'s1',name:'呪術高専・東都校',en:'TOTO ACADEMY',hp:.6,atk:.7,spn:.75,gold:1.0,price:0,base:'#1a2026',dot:'170,190,210',npc:['n_diamond','n_void','n_echoes','n_door']},
- {id:'s2',name:'焼け落ちた樹海',en:'SCORCHED FOREST',hp:.8,atk:.8,spn:.85,gold:1.15,price:375,base:'#2a1c10',dot:'255,170,90',npc:['n_emerald','n_silver','n_hermit','n_cross','n_fool']},
- {id:'s3',name:'里桜高校の裏路地',en:'BACK ALLEY',hp:1.0,atk:.9,spn:.95,gold:1.3,price:875,base:'#141824',dot:'120,150,220',npc:['n_zipper','n_pistols','n_golden','n_aero','n_violet','n_moody']},
- {id:'s4',name:'西京校・地下忌庫',en:'KYOTO VAULT',hp:1.25,atk:1.0,spn:1.0,gold:1.5,price:1500,base:'#16201c',dot:'120,200,170',npc:['n_stone','n_weather','n_kiss','n_plankton','n_diver','n_disc']},
- {id:'s5',name:'殺戮遊戯・荒野結界',en:'CULLING WASTES',hp:1.45,atk:1.08,spn:1.05,gold:1.7,price:2250,base:'#262010',dot:'210,180,110',npc:['n_nail','n_parallel']},
- {id:'s6',name:'帳の下りた夜の渋谷',en:'SHIBUYA NIGHT',hp:1.7,atk:1.16,spn:1.1,gold:1.95,price:3250,base:'#120c20',dot:'120,90,230',npc:['n_killer']},
- {id:'s7',name:'平安の御前闘技場',en:'HEIAN ARENA',hp:1.85,atk:1.2,spn:1.12,gold:2.2,price:4500,base:'#2c1c14',dot:'255,150,110',npc:['n_crimson']},
- {id:'s8',name:'獄門の封印堂',en:'PRISON REALM',hp:2.15,atk:1.28,spn:1.16,gold:2.5,price:6000,base:'#140a12',dot:'230,90,90',npc:['n_time']},
- {id:'s9',name:'新宿・最終決戦の地',en:'SHINJUKU SHOWDOWN',hp:2.5,atk:1.36,spn:1.2,gold:2.9,price:8100,base:'#181c26',dot:'200,210,255',npc:['n_heaven']},
+ {id:'s1',name:'呪術高専・東都校',en:'TOTO ACADEMY',hp:.6,atk:.7,spn:.75,gold:1.0,price:0,base:'#1a2026',dot:'170,190,210'},
+ {id:'s2',name:'焼け落ちた樹海',en:'SCORCHED FOREST',hp:.8,atk:.8,spn:.85,gold:1.15,price:375,base:'#2a1c10',dot:'255,170,90'},
+ {id:'s3',name:'里桜高校の裏路地',en:'BACK ALLEY',hp:1.0,atk:.9,spn:.95,gold:1.3,price:875,base:'#141824',dot:'120,150,220'},
+ {id:'s4',name:'西京校・地下忌庫',en:'KYOTO VAULT',hp:1.25,atk:1.0,spn:1.0,gold:1.5,price:1500,base:'#16201c',dot:'120,200,170'},
+ {id:'s5',name:'殺戮遊戯・荒野結界',en:'CULLING WASTES',hp:1.45,atk:1.08,spn:1.05,gold:1.7,price:2250,base:'#262010',dot:'210,180,110'},
+ {id:'s6',name:'帳の下りた夜の渋谷',en:'SHIBUYA NIGHT',hp:1.7,atk:1.16,spn:1.1,gold:1.95,price:3250,base:'#120c20',dot:'120,90,230'},
+ {id:'s7',name:'平安の御前闘技場',en:'HEIAN ARENA',hp:1.85,atk:1.2,spn:1.12,gold:2.2,price:4500,base:'#2c1c14',dot:'255,150,110'},
+ {id:'s8',name:'獄門の封印堂',en:'PRISON REALM',hp:2.15,atk:1.28,spn:1.16,gold:2.5,price:6000,base:'#140a12',dot:'230,90,90'},
+ {id:'s9',name:'新宿・最終決戦の地',en:'SHINJUKU SHOWDOWN',hp:2.5,atk:1.36,spn:1.2,gold:2.9,price:8100,base:'#181c26',dot:'200,210,255'},
 ];
+STAGES.forEach(s=>s.npc=NPCS.filter(n=>n.st===s.id).map(n=>n.id));
 // 各ステージ内の潜伏位置（人数に応じて近〜遠に散らす。1人だけのステージは最奥）
 STAGES.forEach((s,si)=>{const m=s.npc.length;s.npc.forEach((id,k)=>{const n=NPCS.find(x=>x.id===id),a=si*1.7+k*TAU/m+.5,d=(m===1?3400:1000+k*2700/(m-1))*(1+si*.04);n.stage=s.id;n.pos={x:Math.round(Math.cos(a)*d),y:Math.round(Math.sin(a)*d)}})});
 const stageOf=id=>STAGES.find(s=>s.id===id)||STAGES[0];
@@ -989,11 +991,13 @@ const stageOf=id=>STAGES.find(s=>s.id===id)||STAGES[0];
 function unlockText(c){const u=c.unlock,d=u.awaken||u.meet?DEFS.find(x=>x.id===(u.awaken||u.meet)):null;
   return u.init?'初期キャラ':u.money?`◎ ${u.money.toLocaleString()} で解放`:u.meet?`「${stageOf(NPCS.find(n=>n.stand===u.meet).stage).name}」に潜む本人に会う`
    :u.awaken?`能力「${d.name}」を開眼させる`:u.found?`術師を${u.found}人見つける（${SAVE.found.length}/${u.found}）`:`ボスを累計${u.boss}体撃破（${SAVE.bossKills||0}/${u.boss}）`}
-function checkCharUnlocks(){for(const c of CHARS){if(isUnlocked(c))continue;const u=c.unlock;let ok=false;
+function checkCharUnlocks(){for(const c of CHARS){if(isUnlocked(c))continue;const u=c.unlock;let ok=!!u.init;
   if(u.meet)ok=SAVE.found.includes(NPCS.find(n=>n.stand===u.meet).id);else if(u.awaken)ok=(SAVE.awakened||[]).includes(u.awaken);
   else if(u.found)ok=SAVE.found.length>=u.found;else if(u.boss)ok=(SAVE.bossKills||0)>=u.boss;
   if(ok){SAVE.unlocked.push(c.id);saveData();if(G.state!=='title')unlockNotice(c)}}}
-const standUnlocked=id=>SAVE.stands.includes(id);
+const standUnlocked=id=>CHARS.some(c=>c.stand===id&&isUnlocked(c));
+const MAINS=()=>CHARS.filter(c=>c.role!=='sup'),SUPS=()=>CHARS.filter(c=>c.role==='sup'),PLAY_DEFS=()=>DEFS.filter(d=>CHARS.some(c=>c.stand===d.id));
+SAVE.found=SAVE.found.filter(id=>NPCS.some(n=>n.id===id));
 
 const GROUND={};
 function newGame(ch,stg,hard,endless){
@@ -1158,8 +1162,8 @@ const DEFS=[
    for(let i=0;i<n;i++){const e=randNear(P.x,P.y,360);if(!e)break;shoot({x:P.x,y:P.y,a:Math.atan2(e.y-P.y,e.x-P.x),sp:300,r:9,dmg:0,life:1.4,kind:'plank',col:c,trail:1,
      onHit(p){explode(p.x,p.y,45+5*lv,18+6*lv,c);return false},onEnd(p){explode(p.x,p.y,45+5*lv,18+6*lv,c,1)}})}
    s.cd=1.45*cdm(s);sfx('shot')}}},
-{id:'violet',type:1,name:'MOON JELLY',jp:'澱む海月',col:'#b84dff',sym:'毒',cry:'刺せ…!!',
- desc:l=>`毒の海月を放つ。半径${50+5*l}の触手が毎秒${Math.round((3+1.2*l)*4)}ダメージ＆敵を弱体化`,
+{id:'violet',type:1,name:'VEIL DROP',jp:'帳下ろし',col:'#8a7bff',sym:'帳',cry:'帳を下ろします…!',
+ desc:l=>`帳を下ろす。半径${50+5*l}の結界内で毎秒${Math.round((3+1.2*l)*4)}ダメージ＆敵を弱体化`,
  upd(s,dt){if((s.cd-=dt)<=0){const e=randNear(P.x,P.y,330);if(!e){s.cd=.2;return}const lv=s.L,c=s.def.col;
    G.pr.push({x:P.x,y:P.y,sx:P.x,sy:P.y,vx:(e.x-P.x)/.5,vy:(e.y-P.y)/.5,life:.5,max:.5,kind:'capsule',nocol:1,col:c,hit:new Set(),rot:0,
      onEnd(p){fx({t:'ring',x:p.x,y:p.y,r0:10,r1:50+5*lv,life:.3,col:c,lw:4});G.zn.push({x:p.x,y:p.y,r:50+5*lv,life:3.5+.2*lv,max:3.5+.2*lv,tick:.25,tt:0,dmg:3+1.2*lv,kind:'virus',col:c,onHit:(z,t)=>{t.weak=Math.max(t.weak,1)}})}});
@@ -1257,6 +1261,11 @@ const DEFS=[
  desc:l=>`敵${1+Math.floor(l/4)}体の体内に瑞獣を潜り込ませ、0.4秒後に内側から破壊${40+13*l}（周囲にも半分）`,
  upd(s,dt){if((s.cd-=dt)<=0){const tg=nearN(P.x,P.y,220,1+Math.floor(s.L/4));if(!tg.length){s.cd=.15;return}
    for(const e of tg){e.dive=.4;e.diveD=40+13*s.L;e.diveSrc=s}aimAt(s,tg[0]);say(s,tg[0].x,tg[0].y-36,'降りよ!');s.cd=1.4*cdm(s);sfx('hit')}}},
+{id:'shoko',type:2,name:'REVERSE CARE',jp:'反転の治療',col:'#9dffd0',sym:'治',cry:'はい、治した',
+ desc:l=>`近くの敵${2+Math.floor(l/3)}体へ呪力の針（各${10+4*l}）。命中1体ごとに本体HPを${(.6+.2*l).toFixed(1)}回復`,
+ upd(s,dt){if((s.cd-=dt)<=0){const tg=nearN(P.x,P.y,300,2+Math.floor(s.L/3));if(!tg.length){s.cd=.2;return}
+   for(const e of tg){fx({t:'bolt',pts:[[P.x,P.y],[(P.x+e.x)/2+rnd(-20,20),(P.y+e.y)/2+rnd(-20,20)],[e.x,e.y]],life:.22,col:s.def.col});hurt(e,10+4*s.L)}
+   if(!s.owner)healP(tg.length*(.6+.2*s.L));say(s,P.x,P.y-60,'治した');s.vis=Math.max(s.vis||0,.5);s.cd=1.2*cdm(s);sfx('zap')}}},
 ];
 DEFS.forEach((d,i)=>{d.spr=mkStandSprite(d,i);d.img=d.spr.toDataURL()});
 $('marq').textContent=DEFS.map(d=>d.name+'「'+d.jp+'」').join('　✦　');
@@ -1270,10 +1279,10 @@ makeStatImgs(Object.values(UPS));
 // スキル：汎用（誰でも）と専用（ch のキャラのみ）。base の術式の動きを mul 倍の威力で借りる。練度は持ち主と同じ
 const SKILLS=[
  {id:'kokusen',name:'黒閃',sym:'閃',col:'#e0303a',passive:1,desc:'このキャラの攻撃が8%の確率で黒い火花を散らし、ダメージ2.5倍'},
- {id:'hanten',name:'反転術式',sym:'反',col:'#7dffb0',passive:1,desc:'負の呪力を反転させて肉体を治す。HP自然回復 +1.5/秒'},
+ {id:'hanten',name:'反転術式',sym:'反',col:'#7dffb0',passive:1,regen:1.5,desc:'負の呪力を反転させて肉体を治す。HP自然回復 +1.5/秒'},
  {id:'kani',name:'簡易領域',sym:'簡',col:'#c8f0ff',base:'heaven',mul:.55,desc:'一定間隔で周囲に結界を張り、敵を弾き飛ばす衝撃波を放つ'},
  {id:'jugu',name:'呪具投擲',sym:'具',col:'#cfd6e0',base:'silver',mul:.5,desc:'呪具を投げ放ち、直線上の敵を貫く'},
- {id:'tobari',name:'結界術「帳」',sym:'帳',col:'#6a6aff',base:'violet',mul:.6,desc:'敵の群れに帳を下ろし、中の敵を蝕み弱体化させる'},
+ {id:'tobari',name:'呪符爆破',sym:'符',col:'#ffb35c',base:'plankton',mul:.55,desc:'呪符を投げつけ、着弾で爆発させる'},
  {id:'x_jin',ch:'jin',name:'逕路・爆ぜる蹴撃',sym:'蹴',col:'#ff4b3b',base:'diver',mul:.7,desc:'【専用】蹴りで呪力を流し込み、敵を内側から爆ぜさせる'},
  {id:'x_nori',ch:'nori',name:'共鳴りの一撃',sym:'鳴',col:'#ff8a5c',base:'kiss',mul:.7,desc:'【専用】打ち込んだ釘が共鳴し、少し後に同じダメージをもう一度'},
  {id:'x_pol',ch:'pol',name:'遊鉾・薙ぎ払い',sym:'薙',col:'#7dff9a',base:'fool',mul:.7,desc:'【専用】呪具を振り回し、扇状の敵をまとめて吹き飛ばす'},
@@ -1281,7 +1290,6 @@ const SKILLS=[
  {id:'x_jo',ch:'jo',name:'呪力の大放出',sym:'放',col:'#ff5c8a',base:'hermit',mul:.7,desc:'【専用】底なしの呪力を放ち、複数の敵を同時に撃ち抜く'},
  {id:'x_oku',ch:'oku',name:'拍手の連撃',sym:'連',col:'#5d7bff',base:'star',mul:.6,desc:'【専用】入れ替えた直後に拳の連打を叩き込む'},
  {id:'x_rou',ch:'rou',name:'呪言「爆ぜろ」',sym:'爆',col:'#ffe066',base:'killer',mul:.7,desc:'【専用】呪言を浴びせた敵を、少し後に爆ぜさせる'},
- {id:'x_kira',ch:'kira',name:'多重魂・撥体',sym:'撥',col:'#7ad8c8',base:'plankton',mul:.7,desc:'【専用】魂を練り合わせた改造人間を撃ち出し、着弾で破裂させる'},
  {id:'x_haru',ch:'haru',name:'式神「鵺」',sym:'鵺',col:'#6a6aff',base:'weather',mul:.6,desc:'【専用】雷を帯びた鳥の式神が、画面内の敵に落雷を浴びせる'},
  {id:'x_buchi',ch:'buchi',name:'鈍器の残業打',sym:'鈍',col:'#4fa8ff',base:'diamond',mul:.7,desc:'【専用】布を巻いた鈍器で重い一撃。命中数に応じて少し回復'},
  {id:'x_mist',ch:'mist',name:'赤血・円刃',sym:'円',col:'#e0303a',base:'emerald',mul:.55,desc:'【専用】血を円刃にして全方位へ放つ'},
@@ -1289,6 +1297,15 @@ const SKILLS=[
  {id:'x_rin',ch:'rin',name:'傀儡の追尾砲',sym:'砲',col:'#3dbfff',base:'cross',mul:.6,desc:'【専用】傀儡の砲口から敵を追う呪力弾を放つ'},
  {id:'x_wes',ch:'wes',name:'雷撃の連打',sym:'撃',col:'#9ad0ff',base:'star',mul:.6,desc:'【専用】電荷を帯びた拳で、近くの敵へ連打を浴びせる'},
  {id:'x_eru',ch:'eru',name:'構築弾・跳弾',sym:'跳',col:'#ff5c8a',base:'pistols',mul:.6,desc:'【専用】構築した弾丸が敵の間を跳ね返る'},
+ {id:'x_pan',ch:'pan',name:'激震掌',sym:'震',col:'#d8c8b0',base:'diamond',mul:.7,desc:'【専用】核を切り替えた重い掌打。命中数に応じて少し回復'},
+ {id:'x_sho',ch:'sho',name:'他者治療',sym:'癒',col:'#9dffd0',passive:1,regen:2.5,desc:'【専用】仲間の傷を治し続ける。HP自然回復 +2.5/秒'},
+ {id:'x_ino',ch:'ino',name:'瑞獣「霊亀」の水流',sym:'亀',col:'#5ab8ff',base:'fool',mul:.65,desc:'【専用】水流の散弾で、扇状の敵をまとめて押し流す'},
+ {id:'x_mei',ch:'mei',name:'鴉の特攻',sym:'鴉',col:'#8a6bff',base:'cross',mul:.6,desc:'【専用】鴉を敵へ突っ込ませ、着弾で炸裂させる'},
+ {id:'x_kas',ch:'kas',name:'抜刀・居合',sym:'居',col:'#e6e6e6',base:'zipper',mul:.7,desc:'【専用】間合いに入った敵を、直線上ごと一閃する'},
+ {id:'x_momo',ch:'momo',name:'旋風の刃',sym:'旋',col:'#9ad0ff',base:'emerald',mul:.55,desc:'【専用】箒から全方位へ風の刃を放つ'},
+ {id:'x_kin',ch:'kin',name:'確変・連チャン',sym:'連',col:'#ff8ad8',base:'pistols',mul:.6,desc:'【専用】当たり玉が敵の間を跳ね回る'},
+ {id:'x_cho',ch:'cho',name:'赤血・穿ち',sym:'穿',col:'#c8304a',base:'silver',mul:.7,desc:'【専用】圧縮した血を撃ち出し、直線上の敵を貫く'},
+ {id:'x_iji',ch:'iji',name:'帳・二重',sym:'重',col:'#8a7bff',base:'violet',mul:.6,desc:'【専用】もう一枚帳を重ね、別の群れも結界に閉じ込める'},
  {id:'x_enri',ch:'enri',name:'呪霊操術・特攻',sym:'霊',col:'#c8f0ff',base:'parallel',mul:.7,desc:'【専用】取り込んだ呪霊を放ち、敵に喰らいつかせて自爆させる'},
 ];
 makeStatImgs(SKILLS);
@@ -1296,10 +1313,8 @@ function learnSkill(s,sk){s.skills.push(sk);if(sk.passive){s[sk.id]=true;return}
   const base=DEFS.find(d=>d.id===sk.base),d=Object.assign({},base,{id:'sk_'+sk.id,col:sk.col,name:sk.name,plane:0}),b=mkStand(d);b.owner=s;b.mul=sk.mul*SK_POW;b.lv=s.lv;b.cd=1+R();s.subs.push(b)}
 function kokusenFx(e){fx({t:'ring',x:e.x,y:e.y,r0:6,r1:56,life:.25,col:'#e0303a',lw:6});part(e.x,e.y,'#100006',8,260,3,.3);part(e.x,e.y,'#ff2040',6,220,2.5,.3);if(R()<.35)shout(e.x,e.y-30,'黒閃!!','#ff2040',30)}
 // サポート候補：解放済みの出撃キャラ＋ステージで出会った術師・呪霊
-function supportCands(){if(G.st.length>=2)return[];const a=[];
-  for(const c of CHARS)if(c.id!==G.ch.id&&isUnlocked(c))a.push(c);
-  for(const n of NPCS)if(!n.as&&SAVE.found.includes(n.id))a.push(n);
-  return a.filter(p=>!G.banned.has('sp:'+p.id)&&!G.st.some(s=>s.def.id===p.stand))}
+function supportCands(){if(G.st.length>=2)return[];return SUPS().filter(p=>isUnlocked(p)&&!G.banned.has('sp:'+p.id)&&!G.st.some(s=>s.def.id===p.stand))}
+function joinSupport(p,s){s.who=p;G.st.push(s);const m=p.mods||{},md=G.md;for(const k of['dmg','cd','xp','spd','gold'])if(m[k])md[k]=(md[k]||1)*m[k];if(m.regen)md.regen=(md.regen||0)+m.regen;recalc();G.slotDirty=true}
 function choicePool(){const pool=[];
   for(const s of G.st){if(s.lv<MAXLV)pool.push({k:'up',s,u:'lv'});for(const u of['pow','cd','area'])if(s.up[u]<UP_MAX)pool.push({k:'up',s,u});
     if(s.skills.length<SK_MAX)for(const sk of SKILLS)if(!s.skills.includes(sk)&&(!sk.ch||sk.ch===s.who.id)&&!G.banned.has('sk:'+sk.id))pool.push({k:'sk',s,sk})}
@@ -1307,23 +1322,16 @@ function choicePool(){const pool=[];
 const roleOf=s=>s===G.st[0]?'出撃':'サポート';
 
 /* ================= シナジー：特定の術式を揃えると発動 ================= */
+// シナジー：出撃キャラとサポートの2人が同じ組に属すると発動
 const SYN=[
- {id:'p3',name:'呪術高専・東都校',tag:'東都校',col:'#5ab8ff',mem:['star','emerald','silver','time','diamond','door','golden','zipper','fool','nail'],
-  tiers:[[2,{dmg:.08},'攻撃+8%'],[3,{dmg:.18,cd:.05},'攻撃+18%・CD-5%'],[4,{dmg:.3,cd:.1},'攻撃+30%・CD-10%']]},
- {id:'p4',name:'呪術高専・西京校',tag:'西京校',col:'#ff7ac8',mem:['void','pistols','stone','kiss','aero','disc'],
-  tiers:[[2,{hp:30,reg:.5,dmg:.08},'最大HP+30・回復+0.5/秒・攻撃+8%'],[3,{hp:60,reg:1.5,dmg:.15},'最大HP+60・回復+1.5/秒・攻撃+15%'],[4,{hp:100,reg:2.5,dmg:.25},'最大HP+100・回復+2.5/秒・攻撃+25%']]},
- {id:'p5',name:'特級呪霊の会合',tag:'特級',col:'#ff4b3b',mem:['killer','crimson','hermit','cross','plankton'],
-  tiers:[[2,{cd:.06,arm:.04},'CD-6%・被ダメージ-4%'],[3,{cd:.12,dmg:.08,arm:.07},'CD-12%・攻撃+8%・被ダメージ-7%'],[4,{cd:.18,dmg:.15,arm:.1},'CD-18%・攻撃+15%・被ダメージ-10%']]},
- {id:'p6',name:'呪詛師の連合',tag:'呪詛師',col:'#b84dff',mem:['weather','heaven','echoes','parallel','violet'],
-  tiers:[[2,{arm:.1},'被ダメージ-10%'],[3,{arm:.2,spd:.08},'被ダメージ-20%・速度+8%'],[4,{arm:.3,spd:.12},'被ダメージ-30%・速度+12%']]},
- {id:'p7',name:'一級術師の矜持',tag:'一級',col:'#ffcc33',mem:['zipper','moody','diver'],
-  tiers:[[2,{dmg:.1,spd:.1},'攻撃+10%・速度+10%']]},
- {id:'hero',name:'東都の一年生',tag:'一年',col:'#ffd23f',mem:['star','emerald','golden'],
-  tiers:[[2,{xp:.15},'経験値+15%'],[3,{xp:.3,dmg:.2},'経験値+30%・攻撃+20%']]},
- {id:'tw',name:'現代最強と史上最強',tag:'最強',col:'#e8e8ff',mem:['time','crimson'],
-  tiers:[[2,{ts:1,tsdmg:.6},'領域展開+1秒・領域内の与ダメージ+60%']]},
- {id:'tm',name:'領域の使い手たち',tag:'領域',col:'#ff2050',mem:['time','crimson','cross','star'],
-  tiers:[[2,{cd:.05},'CD-5%'],[3,{cd:.12},'CD-12%']]},
+ {id:'p3',name:'呪術高専・東都校',tag:'東都校',col:'#5ab8ff',mem:['star','golden','emerald','time','diamond','door','silver','fool','nail','violet','shoko'],tiers:[[2,{dmg:.12,cd:.04},'攻撃+12%・CD-4%']]},
+ {id:'p4',name:'呪術高専・西京校',tag:'西京校',col:'#ff7ac8',mem:['void','pistols','kiss','stone','aero','disc'],tiers:[[2,{hp:50,reg:1,dmg:.08},'最大HP+50・回復+1/秒・攻撃+8%']]},
+ {id:'p5',name:'特級の名を冠す者',tag:'特級',col:'#ff4b3b',mem:['time','diamond','crimson','heaven'],tiers:[[2,{cd:.1,arm:.08},'CD-10%・被ダメージ-8%']]},
+ {id:'p6',name:'受肉体と呪詛師',tag:'受肉',col:'#b84dff',mem:['crimson','heaven','weather','echoes'],tiers:[[2,{arm:.15,spd:.08},'被ダメージ-15%・速度+8%']]},
+ {id:'p7',name:'一級術師の矜持',tag:'一級',col:'#ffcc33',mem:['void','zipper','moody','diver'],tiers:[[2,{dmg:.1,spd:.1},'攻撃+10%・速度+10%']]},
+ {id:'hero',name:'東都の一年生',tag:'一年',col:'#ffd23f',mem:['star','golden','emerald'],tiers:[[2,{xp:.15,dmg:.08},'経験値+15%・攻撃+8%']]},
+ {id:'tw',name:'最強とその補佐',tag:'補佐',col:'#e8e8ff',mem:['time','violet'],tiers:[[2,{ts:1,tsdmg:.6},'領域展開+1秒・領域内の与ダメージ+60%']]},
+ {id:'tm',name:'東都の二年生',tag:'二年',col:'#ff2050',mem:['diamond','door','silver','fool'],tiers:[[2,{cd:.1},'CD-10%']]},
 ];
 const synOf=id=>SYN.filter(y=>y.mem.includes(id));
 function synTier(y,ids){const n=y.mem.filter(m=>ids.includes(m)).length;let t=-1;y.tiers.forEach((tr,i)=>{if(n>=tr[0])t=i});return{n,t}}
@@ -1374,13 +1382,13 @@ const ACH=[
  {id:'ts2',t:'領域の支配者',d:'領域を合計100秒展開した',v:()=>CNT('ts'),n:100,m:1000},
  {id:'er',t:'呪王の器',d:'呪王の斬界を合計50回発動した',v:()=>CNT('erase'),n:50,m:800},
  {id:'aw1',t:'開眼者',d:'術式を初めて開眼させた',v:()=>SAVE.awakened.length,n:1,m:200},
- {id:'aw2',t:'呪物に選ばれし者',d:'10種類の術式を開眼させた',v:()=>SAVE.awakened.length,n:10,m:1500},
- {id:'aw3',t:'全開眼の果て',d:'全28種の術式を開眼させた',v:()=>SAVE.awakened.length,n:28,m:8000},
+ {id:'aw2',t:'呪物に選ばれし者',d:'10人のキャラを開眼させた',v:()=>SAVE.awakened.length,n:10,m:1500},
+ {id:'aw3',t:'全開眼の果て',d:'全24キャラを開眼させた',v:()=>CHARS.filter(c=>SAVE.awakened.includes(c.stand)).length,n:24,m:8000},
  {id:'aw6',t:'二人の必殺技',d:'1プレイで出撃キャラとサポートの両方を開眼させた',v:()=>CNT('aw6'),n:2,m:1500},
- {id:'f1',t:'呪いは引かれ合う',d:'術師・呪霊を9人発見',v:()=>SAVE.found.length,n:9,m:300},
- {id:'f2',t:'呪術界の全貌',d:'術師・呪霊を27人全員発見',v:()=>SAVE.found.length,n:27,m:3000},
- {id:'c1',t:'仲間との出会い',d:'出撃キャラを8人解放',v:()=>SAVE.unlocked.length,n:8,m:500},
- {id:'c2',t:'オールスター',d:'出撃キャラを16人全員解放',v:()=>SAVE.unlocked.length,n:16,m:3000},
+ {id:'f1',t:'呪いは引かれ合う',d:'ステージに潜むキャラを9人発見',v:()=>SAVE.found.length,n:9,m:300},
+ {id:'f2',t:'呪術界の全貌',d:'ステージに潜むキャラを18人全員発見',v:()=>SAVE.found.length,n:18,m:3000},
+ {id:'c1',t:'仲間との出会い',d:'キャラを12人解放',v:()=>CHARS.filter(isUnlocked).length,n:12,m:500},
+ {id:'c2',t:'オールスター',d:'全24キャラを解放',v:()=>CHARS.filter(isUnlocked).length,n:24,m:3000},
  {id:'s1',t:'呪いとの出会い',d:'ステージ1をクリア',v:()=>SAVE.cleared.length,n:1,m:200},
  {id:'s5',t:'折り返し地点',d:'5つのステージをクリア',v:()=>SAVE.cleared.length,n:5,m:1000},
  {id:'s9',t:'最終決戦の勝者',d:'全9ステージをクリア',v:()=>SAVE.cleared.length,n:9,m:5000},
@@ -1392,7 +1400,7 @@ const ACH=[
  {id:'ch1',t:'呪物の蒐集家',d:'呪物を累計50個開封',v:()=>CNT('chests'),n:50,m:800},
  {id:'ch5',t:'超激レア',d:'EVOLUTION ×5 を引き当てた',v:()=>CNT('ev5'),n:1,m:1000},
  {id:'sy',t:'絆の呪力',d:'8種類すべてのシナジーを発動させた',v:()=>SAVE.synSeen.length,n:8,m:1500},
- {id:'zk',t:'術式博士',d:'全28種の術式で戦った',v:()=>DEFS.filter(d=>zkDmg(d.id)>0).length,n:28,m:3000},
+ {id:'zk',t:'術式博士',d:'全24キャラの術式で戦った',v:()=>CHARS.filter(c=>zkDmg(c.stand)>0).length,n:24,m:3000},
  {id:'dm',t:'一点集中',d:'1種類の術式で累計1,000,000ダメージ',v:()=>Math.max(...DEFS.map(d=>zkDmg(d.id))),n:1e6,m:2000},
  {id:'pt',t:'呪術師の日常',d:'累計プレイ時間 2時間',v:()=>CNT('time')/60,n:120,m:1500},
 ];
@@ -1404,13 +1412,13 @@ const titleName=()=>{const a=ACH.find(x=>x.id===SAVE.title);return a?a.t:''};
 
 function recalc(){const h=G.st.find(s=>s.def.id==='heaven'),l=h?h.L:0,md=G.md,b=G.bonus,u=puLv,{e,act}=synEffects();
   G.dmgMul=DIFF.pow*(md.dmg||1)*(1+.06*b.pow)*(1+.05*u('pow'))*(1+e.dmg);
-  G.xpMul=(md.xp||1)*(1+.06*b.xp)*(1+.04*u('xp'))*(1+e.xp);G.goldMul=1.1*(1+.08*b.gold)*(1+.1*u('gold'))*(G.hard?HARD.gold:1);
+  G.xpMul=(md.xp||1)*(1+.06*b.xp)*(1+.04*u('xp'))*(1+e.xp);G.goldMul=1.1*(md.gold||1)*(1+.08*b.gold)*(1+.1*u('gold'))*(G.hard?HARD.gold:1);
   G.dmgTaken=Math.pow(.96,b.arm)*Math.pow(.96,u('arm'))*(1-e.arm);G.weakMul=aw('disc')?1.7:1.3;
   G.cdMul=(1-.035*l)*(md.cd||1)*Math.pow(.97,b.cd)*Math.pow(.97,u('cd'))*(1-e.cd)*(aw('heaven')?.85:1);
   G.spdMul=(1+.05*l)*(md.spd||1)*(1+.04*b.spd)*(1+.05*u('spd'))*(1+e.spd)*(aw('silver')?1.12:1)*(aw('fool')?1.1:1);
   G.tsBonus=e.ts;G.tsDmg=e.tsdmg;
   const mx=G.ch.hp+15*b.hp+12*u('hp')+e.hp;if(mx>P.max)P.hp+=mx-P.max;P.max=mx;P.hp=Math.min(P.hp,P.max);
-  P.regen=(md.regen||0)+.3*b.reg+.2*u('reg')+e.reg+(aw('plankton')?2:0)+G.st.reduce((a,s)=>a+(s.hanten?1.5:0),0);
+  P.regen=(md.regen||0)+.3*b.reg+.2*u('reg')+e.reg+(aw('plankton')?2:0)+G.st.reduce((a,s)=>a+s.skills.reduce((b,k)=>b+(k.regen||0),0),0)+(aw('shoko')?3:0);
   // 新しく発動・段階アップしたシナジーを通知
   if(G.state!=='title')for(const id in act){if(!SAVE.synSeen.includes(id))SAVE.synSeen.push(id);if(!(id in G.synAct)||act[id]>G.synAct[id]){const y=SYN.find(s=>s.id===id);synNotice(y,act[id])}}
   G.synAct=act;G.synDirty=true}
@@ -1742,7 +1750,12 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 
 /* ================= UI flow ================= */
 function showChars(){initAudio();$('title').classList.add('hidden');$('over').classList.add('hidden');$('hud').classList.add('hidden');cv.classList.remove('sepia');G.state='chars';checkCharUnlocks();
-  $('clist').innerHTML=CHARS.map((c,i)=>{const d=DEFS.find(x=>x.id===c.stand);
+  const SP=SUPS();$('clist2').innerHTML=SP.map((c,i)=>{const d=DEFS.find(x=>x.id===c.stand),un=isUnlocked(c);
+    return`<div class="ch sup ${un?'':'locked secret'}" style="--c:${un?d.col:'#555'};animation-delay:${.3+i*.03}s"><div class="pt"><img src="${c.img}" alt="">${un?'':'<div class="lk">？</div>'}</div>
+      <div class="nm">${un?c.name:'？？？'}</div><div class="en">${c.part}</div><div class="tt">${un?c.title:'　'}</div>
+      ${un?`<div class="sd"><img src="${d.img}" alt=""><div><b>${d.name}</b><small>「${d.jp}」</small></div></div><div class="ps">★ ${c.pas}</div>`:`<div class="ps">🔒 ${unlockText(c)}</div>`}</div>`}).join('');
+  $('suph').textContent=`SUPPORT ─ サポートキャラ ${SP.filter(isUnlocked).length} / ${SP.length}（レベルアップの選択肢に登場。参戦は1プレイ1人）`;
+  $('clist').innerHTML=MAINS().map((c,i)=>{const d=DEFS.find(x=>x.id===c.stand);
     if(!isUnlocked(c)){const pr=c.unlock.money,ok=pr&&SAVE.money>=pr;return`<div class="ch locked ${pr?'':'secret'} ${ok?'buyable':''}" data-i="${i}" style="--c:#555;animation-delay:${i*.04}s">
       <div class="pt"><img src="${c.img}" alt=""><div class="lk">？</div></div>
       <div class="nm">？？？</div><div class="en">${c.part} ─ LOCKED</div><div class="tt">　</div>
@@ -1754,6 +1767,7 @@ function showChars(){initAudio();$('title').classList.add('hidden');$('over').cl
     <div class="sd"><img src="${d.img}" alt=""><div><b>${d.name}</b><small>${TYPE_NAME[d.type]}「${d.jp}」</small></div></div>
     <div class="ps">★ ${c.pas}</div><div class="hp">HP ${c.hp}</div>${i<9?`<div class="ky">${i+1}</div>`:''}</div>`}).join('');
   [...$('clist').children].forEach(el=>el.onclick=()=>pickChar(+el.dataset.i));
+  [...$('clist2').children].forEach(el=>el.onclick=()=>{el.classList.remove('nope');void el.offsetWidth;el.classList.add('nope');sfx('tick')});
   $('cmoney').textContent='◎ '+SAVE.money.toLocaleString();
   $('chars').classList.remove('hidden');sfx('lvl')}
 /* ---- ステージ選択：クリアで次が購入可能に → マネーで解放 ---- */
@@ -1816,11 +1830,11 @@ function renderTrain(){$('tmoney').textContent='◎ '+SAVE.money.toLocaleString(
   if(trainTab==='pu')$('tlist').innerHTML=TRAIN.map(t=>{const lv=puLv(t.id),mx=lv>=t.max,c=puCost(t),ok=!mx&&SAVE.money>=c;
     return`<div class="tc ${mx?'mx':''}" style="--c:${t.col}"><img src="${t.img}" alt=""><div class="ti"><b>${t.name}</b><small>${t.per}</small><div class="tp">${pips(lv,t.max)}</div></div>
       <button class="tb ${ok?'':'ng'}" data-id="${t.id}">${mx?'MAX':'◎ '+c.toLocaleString()}</button></div>`}).join('');
-  else if(trainTab==='sd')$('tlist').innerHTML=DEFS.map(d=>{const own=standUnlocked(d.id),lv=sdLv(d.id),mx=lv>=SD_MAX,c=sdCost(lv),ok=own&&!mx&&SAVE.money>=c;
+  else if(trainTab==='sd')$('tlist').innerHTML=PLAY_DEFS().map(d=>{const own=standUnlocked(d.id),lv=sdLv(d.id),mx=lv>=SD_MAX,c=sdCost(lv),ok=own&&!mx&&SAVE.money>=c;
     return`<div class="tc ${mx?'mx':''} ${own?'':'lock'}" style="--c:${d.col}"><img src="${d.img}" alt=""><div class="ti"><b>${own?d.name:'？？？'}</b>
-      <small>${own?`攻撃力 <b class="sdv">+${lv}%</b>／最大+${SD_MAX}%`:'ステージに潜む術師に会うと強化できる'}</small><div class="sdb"><i style="width:${lv/SD_MAX*100}%"></i></div></div>
+      <small>${own?`攻撃力 <b class="sdv">+${lv}%</b>／最大+${SD_MAX}%`:'そのキャラを解放すると強化できる'}</small><div class="sdb"><i style="width:${lv/SD_MAX*100}%"></i></div></div>
       <button class="tb ${ok?'':'ng'}" data-sd="${d.id}">${!own?'未解放':mx?'MAX':'◎ '+c.toLocaleString()}</button></div>`}).join('');
-  else $('tlist').innerHTML=CHARS.map(ch=>{const own=isUnlocked(ch),r=SAVE.cm[ch.id]||0,mx=r>=3,c=CM_COST[r],ok=own&&!mx&&SAVE.money>=c,d=DEFS.find(x=>x.id===ch.stand);
+  else $('tlist').innerHTML=MAINS().map(ch=>{const own=isUnlocked(ch),r=SAVE.cm[ch.id]||0,mx=r>=3,c=CM_COST[r],ok=own&&!mx&&SAVE.money>=c,d=DEFS.find(x=>x.id===ch.stand);
     return`<div class="tc ${mx?'mx':''} ${own?'':'lock'}" style="--c:${d.col}"><img src="${ch.img}" alt="" class="tcp"><div class="ti"><b>${own?ch.name:'？？？'}</b>
       <small>${own?`${ch.pas}　→ 1段階ごとに ${cmUp(ch)}<br>★3段階目：初期術式Lvアップで出陣`:'キャラ選択画面で解放すると強化できる'}</small><div class="tp">${pips(r,3)}</div></div>
       <button class="tb ${ok?'':'ng'}" data-cm="${ch.id}">${!own?'未解放':mx?'MAX':'◎ '+c.toLocaleString()}</button></div>`}).join('');
@@ -1843,10 +1857,10 @@ function showTitle(){G.state='title';$('title').classList.remove('hidden');$('be
 let zTab='st';
 function showZukan(){initAudio();$('title').classList.add('hidden');G.state='zukan';zTab='st';renderZukan();$('zukan').classList.remove('hidden');$('zukan').scrollTop=0;sfx('lvl')}
 function renderZukan(){$('ztabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===zTab));const N=v=>Math.floor(v).toLocaleString();
-  $('zsub').innerHTML=zTab==='st'?`解放 <b>${DEFS.filter(d=>standUnlocked(d.id)).length}</b> / ${DEFS.length}　開眼 <b>${SAVE.awakened.length}</b> / ${DEFS.length}`
+  $('zsub').innerHTML=zTab==='st'?`解放 <b>${PLAY_DEFS().filter(d=>standUnlocked(d.id)).length}</b> / ${PLAY_DEFS().length}　開眼 <b>${PLAY_DEFS().filter(d=>SAVE.awakened.includes(d.id)).length}</b> / ${PLAY_DEFS().length}`
     :`達成 <b>${SAVE.ach.length}</b> / ${ACH.length}　称号：<b>${titleName()||'なし'}</b>`;
-  if(zTab==='st')$('zlist').innerHTML=DEFS.map(d=>{const un=standUnlocked(d.id),z=SAVE.zk[d.id]||{},aw=SAVE.awakened.includes(d.id),npc=NPCS.find(n=>n.stand===d.id);
-    if(!un&&!z.uses)return`<div class="tc lock zc" style="--c:#555"><img src="${d.img}" alt=""><div class="ti"><b>？？？</b><small>${npc?`「${stageOf(npc.stage).name}」に潜む術師に会うと解放`:'初期術式'}</small></div></div>`;
+  if(zTab==='st')$('zlist').innerHTML=PLAY_DEFS().map(d=>{const un=standUnlocked(d.id),z=SAVE.zk[d.id]||{},aw=SAVE.awakened.includes(d.id),npc=CHARS.find(c=>c.stand===d.id);
+    if(!un&&!z.uses)return`<div class="tc lock zc" style="--c:#555"><img src="${d.img}" alt=""><div class="ti"><b>？？？</b><small>${unlockText(npc)}</small></div></div>`;
     return`<div class="tc zc ${aw?'mx':''}" style="--c:${d.col}"><img src="${d.img}" alt=""><div class="ti"><b>${d.name}${aw?' <em class="zaw">開眼</em>':''}</b><small>${TYPE_NAME[d.type]}「${d.jp}」${npc?'　─ '+npc.name:''}</small>
       <div class="zst"><span>累計ダメージ <b>${N(z.dmg||0)}</b></span><span>撃破 <b>${N(z.kills||0)}</b></span><span>最高 <b>${z.best?(z.best>=MAXLV?'MAX':'Lv'+z.best):'─'}</b></span><span>使用 <b>${z.uses||0}</b>回</span></div>
       <small class="zaa">必殺技：${aw?`<b>${AWAKE[d.id].name}</b> ─ ${AWAKE[d.id].desc}`:'？？？（練度MAXで呪物に触れると判明）'}</small></div></div>`}).join('');
@@ -1909,7 +1923,7 @@ function openChoice(start){
     if(c.k==='sp'){const p=c.p,d=DEFS.find(x=>x.id===p.stand);return`<div class="card sup" style="--c:${d.col};--t:${d.col};${dl}" data-i="${i}">
       <div class="ctop"><span class="ctag">サポート参戦</span><span class="cnew">NEW!</span></div>
       <div class="cart"><img src="${p.img}" alt=""></div><div class="cname">${p.name}</div><div class="cjp">${d.name}「${d.jp}」${synChips(d.id,true)}</div>
-      <div class="cdesc">${p.title}<br>${dfmt(d.desc(effLv(1)))}<br><small>サポートは1人だけ。参戦後は強化・スキル習得もできる</small></div><div class="ckey">${i+1}</div></div>`}
+      <div class="cdesc">${p.title}<br>${dfmt(d.desc(effLv(Math.max(1,Math.floor(G.st[0].lv*.6)))))}<br><small>★ ${p.pas}　サポートは1人だけ。参戦後は強化・スキル習得もできる</small></div><div class="ckey">${i+1}</div></div>`}
     const s=c.s,who=`<span class="cwho"><img src="${s.who.img}" alt="">${roleOf(s)}：${s.who.name}</span>`;
     if(c.k==='sk'){const sk=c.sk;return`<div class="card skill ${sk.ch?'max':''}" style="--c:${sk.col};--t:${s.def.col};${dl}" data-i="${i}">
       <div class="ctop"><span class="ctag">${sk.ch?'専用スキル':'新スキル'}</span><span class="clv">${s.skills.length+1} / ${SK_MAX}</span></div>
@@ -1928,7 +1942,7 @@ function pick(i){const c=G.choices[i];if(!c||G.state!=='levelup')return;
     G.bans--;G.banMode=false;bigText(`${c.k==='sk'?c.sk.name:c.p.name} を除外`,'red');openChoice(false);return}
   $('lvl').classList.add('hidden');if(!G.choiceStart)G.pend--;G.slotDirty=true;
   if(c.stat){G.bonus[c.stat.id]++;recalc();G.state='play';bigText(`${c.stat.jp} +${G.bonus[c.stat.id]}`,'gold');afterChoice()}
-  else if(c.k==='sp'){const d=DEFS.find(x=>x.id===c.p.stand),s=mkStand(d);s.who=c.p;s.lv=Math.max(1,Math.floor(G.st[0].lv*.6));G.st.push(s);recalc();cutin(d,'sup',c.p)}
+  else if(c.k==='sp'){const d=DEFS.find(x=>x.id===c.p.stand),s=mkStand(d);s.lv=Math.max(1,Math.floor(G.st[0].lv*.6));joinSupport(c.p,s);cutin(d,'sup',c.p)}
   else if(c.k==='sk'){learnSkill(c.s,c.sk);recalc();G.state='play';bigText(`「${c.sk.name}」習得!!`,'gold long');sfx('gold');afterChoice()}
   else{const s=c.s;if(c.u==='lv'){s.lv++;if(s.lv===MAXLV)bigText('練度MAX!! 呪物に触れて開眼','gold long')}else{s.up[c.u]++;bigText(`${UPS[c.u].n} UP!`,'gold')}recalc();G.state='play';afterChoice()}}
 function synChips(id,adding){const ids=G.st.map(s=>s.def.id);return synOf(id).map(y=>{const a=synTier(y,ids).t,b=adding?synTier(y,ids.concat(id)).t:a,hot=b>a;
@@ -2022,16 +2036,16 @@ function showStats(){$('stats').innerHTML=`<span style="color:#ffd23f">${titleNa
   +`<div class="newun"><div><span>獲得マネー <b>+${Math.floor(G.gold).toLocaleString()}</b>　（所持 ${SAVE.money.toLocaleString()}）</span></div></div>`+resultTable();buildShare()}
 /* ================= 合体必殺技：特定の術式2体が揃うと、時を止めたカットインから共同の大技 ================= */
 const COMBOS=[
- {a:'star',b:'void',name:'超親友の黒き閃光',cry:'ブラザー!! ─ 応ッ、行くぞ!!'},
- {a:'star',b:'emerald',name:'拳と釘の共鳴り',cry:'行くぞ釘宮!! ─ 共鳴れッ!!'},
- {a:'star',b:'golden',name:'虎と影の挟撃',cry:'伏影!! ─ 来い、影狼!!'},
- {a:'time',b:'crimson',name:'最強と呪王の激突',cry:'天上天下 ─ 身の程を弁えろ!!'},
- {a:'diamond',b:'time',name:'特級師弟の共演',cry:'先生!! ─ じゃ、合わせようか'},
- {a:'zipper',b:'star',name:'七三と拳の時間外任務',cry:'虎堂君、続きを ─ はいッ!!'},
- {a:'pistols',b:'kiss',name:'西京校の血と弾丸',cry:'穿て ─ 撃ち抜くわよ!!'},
- {a:'silver',b:'kiss',name:'禅野姉妹の共闘',cry:'マイ!! ─ 姉さん、今よ!!'},
- {a:'door',b:'fool',name:'呪言と呪骸の二年コンビ',cry:'しゃけ!! ─ ゴリラモード!!'},
- {a:'heaven',b:'parallel',name:'百鬼夜行・大号令',cry:'極ノ番 ─ 渦に呑まれろ!!'}];
+ {a:'star',b:'zipper',name:'七三と拳の時間外任務',cry:'虎堂君、続きを ─ はいッ!!'},
+ {a:'star',b:'echoes',name:'兄弟の血と拳',cry:'お兄ちゃんに任せろ ─ 行くぞ!!'},
+ {a:'star',b:'door',name:'呪言と拳の連携',cry:'動くな!! ─ うおおおッ!!'},
+ {a:'time',b:'violet',name:'帳の中の無窮',cry:'帳、下ろしました! ─ じゃ、始めようか'},
+ {a:'diamond',b:'door',name:'二年の親友',cry:'しゃけ!! ─ 純愛だよ'},
+ {a:'golden',b:'silver',name:'影と呪具の挟撃',cry:'禅野先輩!! ─ 合わせな!!'},
+ {a:'emerald',b:'silver',name:'釘と槍の乱舞',cry:'共鳴れ ─ 穿てッ!!'},
+ {a:'void',b:'pistols',name:'西京校の共闘',cry:'ついて来い ─ 穿て!!'},
+ {a:'crimson',b:'weather',name:'呪いの王と雷神',cry:'愉しませろ ─ 痺れるだろ!!'},
+ {a:'heaven',b:'echoes',name:'百鬼と赤血',cry:'極ノ番 ─ 赤血、放て!!'}];
 const COMBO_CD=40;
 // 揃っている合体技を調べ、近くに敵が多い（またはボスがいる）時に発動
 function updCombo(rdt){if(G.timeStop>0||G.erase>0)return;if((G.comboChk-=rdt)>0)return;G.comboChk=.5;
@@ -2093,10 +2107,10 @@ function meetSecret(c){G.secrets=G.secrets.filter(x=>x!==c);joy.on=false;
   if(!SAVE.found.includes(c.id))SAVE.found.push(c.id);if(!standUnlocked(c.stand))SAVE.stands.push(c.stand);saveData();checkCharUnlocks();
   const d=DEFS.find(x=>x.id===c.stand);let joined=false;
   // 空き枠があればその場で仲間入り
-  if(G.st.length<2&&!G.st.some(s=>s.def===d)){const s=mkStand(d);s.who=c.as?CHARS.find(x=>x.id===c.as):c;G.st.push(s);recalc();G.slotDirty=true;joined=true}
+  const who=CHARS.find(x=>x.id===c.as);if(who.role==='sup'&&G.st.length<2&&!G.st.some(s=>s.def===d)){const s=mkStand(d);s.lv=Math.max(1,Math.floor(G.st[0].lv*.6));joinSupport(who,s);joined=true}
   G.state='cutin';const el=$('cutin');el.className='';void el.offsetWidth;el.className='show max meet';el.style.setProperty('--c',d.col);
   $('cimg').src=c.img;$('ctype').textContent='★ SECRET ─ 術師発見!! ★';$('cname').textContent=c.name;$('cjp').textContent='「'+c.title+'」';
-  $('ccry').textContent=`サポート候補に追加${joined?' ─ サポートとして参戦!':''}`;G.cutT=G.cutMax=2.8;sfx('gold');sfx('boss')}
+  $('ccry').textContent=CHARS.find(x=>x.id===c.as).role==='sup'?`サポート候補に追加${joined?' ─ その場で参戦!':''}`:'出撃キャラとして解放!';G.cutT=G.cutMax=2.8;sfx('gold');sfx('boss')}
 function drawSecret(c){const x=c.pos.x,y=c.pos.y,p=.5+.3*Math.sin(G.t*4);
   const bg=ctx.createLinearGradient(0,y-300,0,y);bg.addColorStop(0,'rgba(200,20,42,0)');bg.addColorStop(1,`rgba(200,20,42,${.25+.25*p})`);ctx.fillStyle=bg;ctx.fillRect(x-22,y-300,44,300);
   ctx.fillStyle='rgba(200,20,42,.3)';ctx.beginPath();ctx.ellipse(x,y+16,26+6*p,8,0,0,TAU);ctx.fill();
