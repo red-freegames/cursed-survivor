@@ -868,9 +868,10 @@ const BONUS0=()=>Object.fromEntries(STATS.map(s=>[s.id,0]));
 /* 必殺技：練度MAX のキャラが「呪物」に触れた時のみ付与される追加能力 */
 const aw=id=>G.st.find(s=>s.aw&&s.def.id===id);
 const AWAKE={
- star:{name:'領域展開「伏せし王の伽藍」',desc:'20秒毎に自ら領域を展開（5秒）。領域内の敵は動けず、拳は必中する',
-  upd(s,dt){if(G.timeStop>0)return;if((s.awT=(s.awT??6)-dt)<=0&&near(P.x,P.y,300)){s.awT=20;G.timeStop=G.tsMax=5+G.tsBonus;G.tsSec=0;domainStart('伏せし王の伽藍',s.def.col);s.vis=.8}}},
- diamond:{name:'反転術式・極',desc:'致死ダメージを受けてもHP60%で踏みとどまる（60秒に1回）'},
+ star:{name:'黒閃・極',desc:'黒閃が大幅に強化される。発生率 約35%、ダメージ4倍（通常は2.5倍）'},
+ diamond:{name:'領域展開「真贋相恋」',desc:'20秒毎に領域を展開（5秒）。領域内の敵は動けず、模倣した刀の斬撃が絶え間なく降り注ぐ',
+  upd(s,dt){domainAw(s,dt,'真贋相恋','#ff5cc8',.1,()=>{const e=randNear(P.x,P.y,460);if(!e)return;for(const t of inR(e.x,e.y,56))hurt(t,26+9*s.L,{kb:30});
+    fx({t:'zip',x:e.x-40,y:e.y-30,x2:e.x+40,y2:e.y+30,life:.22,col:'#ff5cc8'});fx({t:'ring',x:e.x,y:e.y,r0:6,r1:56,life:.22,col:'#ff5cc8',lw:4});part(e.x,e.y,'#ff9ae0',5,200,3,.3)})}},
  golden:{name:'領域展開「嵌合する影庭」',desc:'被弾するたび影から式神が飛び出し、周囲の敵へ反撃する'},
  zipper:{name:'拡張術式「瓦落崩し」',desc:'3秒毎に8方向へ七三の斬線を走らせ、直線上の敵を切断（防御無視）',
   upd(s,dt){if((s.awT=(s.awT??3)-dt)>0)return;s.awT=3;if(!near(P.x,P.y,300))return;const L=280,d=40+10*s.L;
@@ -894,13 +895,15 @@ const AWAKE={
  weather:{name:'幻獣の雷鳴',desc:'12秒毎に画面全体へ雷を落とし、全ての敵にダメージ＋5秒間弱体化',
   upd(s,dt){if((s.awT=(s.awT??12)-dt)>0)return;s.awT=12;const hw=VW/2,hh=VH/2;let n=0;for(const e of G.en){if(e.dead||Math.abs(e.x-G.cx)>hw||Math.abs(e.y-G.cy)>hh)continue;e.weak=Math.max(e.weak,5);hurt(e,10+3*s.L);n++}
    if(n){G.hurtF=0;fx({t:'tsring',x:P.x,y:P.y,life:.6,col:s.def.col});G.shake=10;sfx('zap');bigText('幻獣の雷鳴','cyan')}}},
- time:{name:'領域展開「無窮の空域」',desc:'領域展開中、0.25秒毎に「蒼」の礫を追加で撃ち続ける',
+ time:{name:'領域展開「無量空域」',desc:'術式「蒼」の呪縛が領域展開に変わる。展開中、0.25秒毎に「蒼」の礫を追加で撃ち続ける',
   upd(s,dt){if(G.timeStop<=0)return;if((s.awT=(s.awT??.25)-dt)>0)return;s.awT=.25;const e=randNear(P.x,P.y,500);const a=e?Math.atan2(e.y-P.y,e.x-P.x):R()*TAU,r=rnd(40,80),ra=R()*TAU;
    shoot({x:P.x+Math.cos(ra)*r,y:P.y+Math.sin(ra)*r,a,sp:720,r:6,dmg:14+5*s.L,pierce:1,life:1.1,kind:'aoB',col:'#4da3ff',frozen:1})}},
  killer:{name:'領域展開「自閉の円環」',desc:'敵の魂を追い続ける改造人間が常に随行し、接触で爆ぜる',
   upd(s,dt){if(s.tank&&!s.tank.dead)return;const lv=s.L;s.tank={x:P.x,y:P.y,r:10,life:1e9,max:1e9,kind:'tank',cd:0,upd(z,dt){z.cd-=dt;const e=near(z.x,z.y,500);if(!e){z.x+=(P.x-z.x)*dt*2;z.y+=(P.y-z.y)*dt*2;return}
      const dx=e.x-z.x,dy=e.y-z.y,d=Math.hypot(dx,dy)||1;z.x+=dx/d*190*dt;z.y+=dy/d*190*dt;z.face=dx<0?-1:1;if(d<e.r+12&&z.cd<=0){z.cd=.8;explode(z.x,z.y,60,30+8*lv,'#7ad8c8');shout(z.x,z.y-24,'アソボ…','#7ad8c8',22)}}};G.zn.push(s.tank)}},
- crimson:{name:'呪王の慧眼',desc:'千年の経験で攻撃を読み、35%の確率で敵の攻撃を完全に回避する'},
+ crimson:{name:'領域展開「伏魔の御厨」',desc:'20秒毎に領域を展開（5秒）。領域内の敵は動けず、斬撃「解」が絶え間なく降り注ぐ',
+  upd(s,dt){domainAw(s,dt,'伏魔の御厨','#e0002a',.07,()=>{const e=randNear(P.x,P.y,480);if(!e)return;hurt(e,30+10*s.L,{kb:20});const a=R()*Math.PI;
+    fx({t:'zip',x:e.x-Math.cos(a)*44,y:e.y-Math.sin(a)*44,x2:e.x+Math.cos(a)*44,y2:e.y+Math.sin(a)*44,life:.2,col:'#e0002a'});part(e.x,e.y,'#3a0008',4,180,3,.3)})}},
  void:{name:'不戯の大拍手',desc:'4秒毎に本体の周囲170の敵をまとめて入れ替え、打ち据える（防御無視）',
   upd(s,dt){if((s.awT=(s.awT??4)-dt)>0)return;s.awT=4;if(!near(P.x,P.y,170))return;for(const e of inR(P.x,P.y,170)){hurt(e,50+12*s.L,{pa:1});e.weak=Math.max(e.weak,3)}
    fx({t:'erase',x:P.x,y:P.y,a:0,r:170,sp:Math.PI,life:.4,col:s.def.col});shout(P.x,P.y-70,'パンッ!!','#5d7bff',34);sfx('cut')}},
@@ -1022,7 +1025,7 @@ function explode(x,y,r,d,col,quiet){for(const e of inR(x,y,r))hurt(e,d,{kb:60});
 function healP(v){if(v<=0)return;P.hp=Math.min(P.max,P.hp+v);part(P.x,P.y-10,'#6dff9e',3,80,3,.5)}
 
 /* ================= damage ================= */
-function hurt(e,d,o){if(!e||e.dead||d<=0)return 0;o=o||{};let v=d*G.dmgMul*(e.weak>0?G.weakMul:1)*(G.timeStop>0?1+G.tsDmg:1);if(G.src&&G.src.def){const q=SAVE.sd[G.src.def.id];if(q)v*=1+.01*q;const O=G.src.owner||G.src;if(O.up)v*=(1+UPV.pow*O.up.pow+UPV.lvx*Math.max(0,O.lv-MAXLV))*(G.src.mul||1);const kc=(O.kokusen?.08:0)+(O.who&&O.who.id==='jin'?.05:0);if(kc&&R()<kc){v*=2.5;kokusenFx(e)}}if(!o.pa)v*=1-e.armor;if(G.buffT>0)v*=1.4;v=Math.max(1,Math.round(v*rnd(.9,1.1)));if(e.minT){v=Math.max(1,Math.min(v,Math.round(e.bud)));e.bud-=v}e.hp-=v;e.flash=.09;e.hitT=G.t;if(e.prop){kill(e);return v}if(G.src){const O=G.src.owner||G.src;O.dmg=(O.dmg||0)+Math.min(v,Math.max(0,e.hp+v))}
+function hurt(e,d,o){if(!e||e.dead||d<=0)return 0;o=o||{};let v=d*G.dmgMul*(e.weak>0?G.weakMul:1)*(G.timeStop>0?1+G.tsDmg:1);if(G.src&&G.src.def){const q=SAVE.sd[G.src.def.id];if(q)v*=1+.01*q;const O=G.src.owner||G.src;if(O.up)v*=(1+UPV.pow*O.up.pow+UPV.lvx*Math.max(0,O.lv-MAXLV))*(G.src.mul||1);const ka=O.aw&&O.def.id==='star',kc=(O.kokusen?(ka?.3:.08):0)+(O.who&&O.who.id==='jin'?.05:0);if(kc&&R()<kc){v*=ka?4:2.5;kokusenFx(e)}}if(!o.pa)v*=1-e.armor;if(G.buffT>0)v*=1.4;v=Math.max(1,Math.round(v*rnd(.9,1.1)));if(e.minT){v=Math.max(1,Math.min(v,Math.round(e.bud)));e.bud-=v}e.hp-=v;e.flash=.09;e.hitT=G.t;if(e.prop){kill(e);return v}if(G.src){const O=G.src.owner||G.src;O.dmg=(O.dmg||0)+Math.min(v,Math.max(0,e.hp+v))}
   if(o.kb&&G.timeStop<=0){const a=Math.atan2(e.y-P.y,e.x-P.x),k=o.kb*(e.type==='boss'?.06:(e.type==='brute'||e.type==='elite')?.35:1)*4;e.kx+=Math.cos(a)*k;e.ky+=Math.sin(a)*k}
   numText(e.x+rnd(-8,8),e.y-e.r,v,o.pa?'#9fd8ff':v>=150?'#ffd23f':'#fff');if(e.hp<=0)kill(e);return v}
 const DEATH_SFX=['グシャッ','ブチィッ','ドパァッ','ザシュッ','祓除!','ボゴォッ'];
@@ -1040,11 +1043,11 @@ const GEMV=[1,5,25];
 function dropGold(x,y,v){G.gm.push({x,y,t:v>=25?4:3,v,gold:1,sp:0,dl:.35,ph:R()*TAU})}
 function dropGem(x,y,t){if(G.gm.length>420){const g=G.gm[(R()*G.gm.length)|0];if(g.gold){G.gm.push({x,y,t,v:GEMV[t],sp:0,dl:.22,ph:0});return}g.v+=GEMV[t];if(g.v>=25)g.t=2;else if(g.v>=5)g.t=Math.max(g.t,1);return}G.gm.push({x,y,t,v:GEMV[t],sp:0,dl:.22,ph:R()*TAU})}
 function damageP(d){if(P.inv>0||G.erase>0||G.state!=='play')return;
-  if(aw('crimson')&&R()<.35){P.inv=.4;shout(P.x,P.y-44,'予知!','#e0002a',24);return}
+  
   d=Math.max(1,Math.round(d*G.dmgTaken*(aw('parallel')?.5:1)*(aw('diver')?.75:1)));
   if(aw('door')){for(const e of inR(P.x,P.y,220))if(!e.prop){e.stun=Math.max(e.stun||0,5);fx({t:'page',x:e.x,y:e.y-e.r,life:.6})}shout(P.x,P.y-60,'堕ちろ!','#ffe066',26)}P.hp-=d;P.inv=.5;G.shake=Math.max(G.shake,8);G.hurtF=.35;sfx('hurt');numText(P.x,P.y-24,d,'#ff3355',true);
   const gl=aw('golden');if(gl){G.src=gl;explode(P.x,P.y,150,60+15*gl.L,'#ffcc33',1);shout(P.x,P.y-60,'影から反撃!!','#ffcc33',30);gl.vis=.6;G.src=null}
-  if(P.hp<=0){const dm=aw('diamond');if(dm&&!(dm.revT>0)){dm.revT=60;P.hp=P.max*.6;P.inv=1.5;bigText('完全修復!!','pink');part(P.x,P.y,'#ff7ac8',24,200,4,.6);return}if(P.rev>0){P.rev--;P.hp=1;startRevive();return}P.hp=0;gameOver()}}
+  if(P.hp<=0){const dm=null;if(dm&&!(dm.revT>0)){dm.revT=60;P.hp=P.max*.6;P.inv=1.5;bigText('完全修復!!','pink');part(P.x,P.y,'#ff7ac8',24,200,4,.6);return}if(P.rev>0){P.rev--;P.hp=1;startRevive();return}P.hp=0;gameOver()}}
 /* ---- 復活演出：一度倒れたら時を止め、鼓動が止まり…再び動き出して復活する（その間は全てが停止） ---- */
 const REV_T=3.4;
 function startRevive(){G.state='revive';G.revT=0;G.revT0=performance.now();G.revStep=0;joy.on=false;$('joy').classList.add('hidden');G.shake=0;
@@ -1073,7 +1076,10 @@ function mkStandSprite(d,idx){const c=document.createElement('canvas');c.width=1
 
 /* ================= 20 stands ================= */
 // 攻撃（CDリセット）時のみ術式を実体化させる
-function domainStart(name,col){G.domName=name;G.domCol=col||'#5ab8ff';sfx('tstop');fx({t:'tsring',x:P.x,y:P.y,life:.6,col:G.domCol});G.shake=Math.max(G.shake,6)}
+// 開眼の領域展開：20秒毎に5秒、領域内では every 秒ごとに hit() を呼ぶ
+function domainAw(s,dt,name,col,every,hit){if(G.timeStop>0){if(G.domOwn!==s)return;if((s.awB=(s.awB??0)-dt)>0)return;s.awB=every;hit();return}
+  if((s.awT=(s.awT??6)-dt)<=0&&near(P.x,P.y,320)){s.awT=20;G.timeStop=G.tsMax=5+G.tsBonus;G.tsSec=0;domainStart(name,col);G.domOwn=s;s.vis=.8;bigText('領域展開「'+name+'」','red')}}
+function domainStart(name,col){G.domOwn=null;G.domName=name;G.domCol=col||'#5ab8ff';sfx('tstop');fx({t:'tsring',x:P.x,y:P.y,life:.6,col:G.domCol});G.shake=Math.max(G.shake,6)}
 function cdm(s){s.vis=Math.max(s.vis||0,.75);if(!((s.owner||s).pz>.12))pose(s);const O=s.owner||s;return G.cdMul*(O.up?cdRed(O):1)}
 function aimAt(s,e){const a=Math.atan2(e.y-P.y,e.x-P.x);s.atk=.28;s.tx=e.x-Math.cos(a)*20;s.ty=e.y-Math.sin(a)*20;pose(s,a)}
 // 攻撃ポーズ：pz=残り時間、pa=向き、pk2=スキルのポーズ（なければ本人の術式のポーズ）
@@ -1155,10 +1161,10 @@ const DEFS=[
      if(s.L>=4){const c=near(e.x,e.y,160,new Set([e]));if(c){fx({t:'bolt',pts:[[e.x,e.y],[(e.x+c.x)/2+rnd(-15,15),(e.y+c.y)/2+rnd(-15,15)],[c.x,c.y]],life:.2,col:s.def.col});hurt(c,d*.6)}}}
    G.shake=Math.max(G.shake,3);s.cd=1.9*cdm(s);sfx('zap')}}},
 /* ---- 特殊型 ---- */
-{id:'time',type:2,name:'INFINITE VOID',jp:'無窮の空域',col:'#3d8bff',sym:'蒼',cry:'領域展開ッ!!',
+{id:'time',type:2,name:'BLUE BIND',jp:'術式「蒼」',col:'#3d8bff',sym:'蒼',cry:'領域展開ッ!!',
  desc:l=>`${(2.5+.3*l).toFixed(1)}秒間 領域を展開し敵を縛る（CD${Math.max(10,18-.8*l).toFixed(1)}秒）。展開中に「蒼」の礫${10+2*l}本（各${14+5*l}）を配置`,
  upd(s,dt){if(G.timeStop>0)return;if((s.cd-=dt)<=0){if(!near(P.x,P.y,380)){s.cd=.5;return}
-   G.timeStop=G.tsMax=2.5+.3*s.L+G.tsBonus;G.tsSec=0;domainStart('無窮の空域',s.def.col);
+   G.timeStop=G.tsMax=2.5+.3*s.L+G.tsBonus;G.tsSec=0;domainStart(s.aw?'無量空域':'蒼の呪縛',s.def.col);
    const n=10+2*s.L,tg=nearN(P.x,P.y,520,n);for(let i=0;i<n;i++){const ra=i/n*TAU,x=P.x+Math.cos(ra)*(60+(i%2)*18),y=P.y+Math.sin(ra)*(60+(i%2)*18),e=tg[i%Math.max(1,tg.length)];
      shoot({x,y,a:e?Math.atan2(e.y-y,e.x-x):ra,sp:720,r:6,dmg:14+5*s.L,pierce:1,life:1.1,kind:'aoB',col:'#4da3ff',frozen:1})}
    s.cd=Math.max(10,18-.8*s.L)*cdm(s)}}},
@@ -1255,12 +1261,13 @@ const UPS={lv:{id:'lv',n:'練度',sym:'練',col:'#e8dfc8',d:`術式の練度 +1�
 makeStatImgs(Object.values(UPS));
 // req：習得条件（練度・攻撃力・頻度・効果範囲の強化値）。reqCh：キャラ別の条件
 const SKILLS=[
- {id:'kokusen',ch:'jin',name:'黒閃',sym:'閃',col:'#e0303a',passive:1,req:{pow:3},desc:'【専用】攻撃が8%の確率で黒い火花を散らし、ダメージ2.5倍'},
- {id:'hanten',ch:['jo','dion','dia'],name:'反転術式',sym:'反',col:'#7dffb0',passive:1,regen:1.5,req:{lv:9},desc:'【専用】負の呪力を反転させて肉体を治す。HP自然回復 +1.5/秒'},
- {id:'x_jin',ch:'jin',name:'逕路・爆ぜる蹴撃',sym:'蹴',col:'#ff4b3b',base:'diver',mul:.7,req:{lv:5},desc:'【専用】蹴りで呪力を流し込み、敵を内側から爆ぜさせる'},
- {id:'x_jo',ch:'jo',name:'呪力の大放出',sym:'放',col:'#ff5cc8',base:'hermit',mul:.7,req:{lv:6},desc:'【専用】底なしの呪力を放ち、複数の敵を同時に撃ち抜く'},
- {id:'x_dion',ch:'dion',name:'術式反転「紅」',sym:'紅',col:'#ff2020',base:'void',mul:.8,req:{lv:6},desc:'【専用】反転させた無限の斥力で、前方の敵を空間ごと吹き飛ばす'},
- {id:'x_dia',ch:'dia',name:'斬撃・網斬り',sym:'網',col:'#e0002a',base:'zipper',mul:.8,req:{lv:6},desc:'【専用】直線上の敵を、見えない斬撃でまとめて切り裂く'},
+ // 出撃キャラは「技1 → 技2 → 開眼（必殺技）」の順に習得する（after：前の技を習得済みであること）
+ {id:'x_jin',ch:'jin',name:'逕路拳',sym:'逕',col:'#ff4b3b',base:'diver',mul:.7,req:{lv:5},desc:'【専用】拳の衝撃に遅れて呪力が響き、敵を内側から二度打ちする'},
+ {id:'kokusen',ch:'jin',after:'x_jin',name:'黒閃',sym:'閃',col:'#e0303a',passive:1,req:{pow:3},desc:'【専用】攻撃が8%の確率で黒い火花を散らし、ダメージ2.5倍'},
+ {id:'hanten',ch:['jo','dion','dia'],name:'反転術式',sym:'反',col:'#7dffb0',passive:1,regen:1.5,req:{lv:5},desc:'【専用】負の呪力を反転させて肉体を治す。HP自然回復 +1.5/秒'},
+ {id:'x_jo',ch:'jo',after:'hanten',name:'呪力の大放出',sym:'放',col:'#ff5cc8',base:'hermit',mul:.7,req:{lv:9},desc:'【専用】底なしの呪力を放ち、複数の敵を同時に撃ち抜く'},
+ {id:'x_dion',ch:'dion',after:'hanten',name:'術式反転「紅」',sym:'紅',col:'#ff2020',base:'void',mul:.8,req:{lv:9},desc:'【専用】反転させた無限の斥力で、前方の敵を空間ごと吹き飛ばす'},
+ {id:'x_dia',ch:'dia',after:'hanten',name:'術式「解」',sym:'解',col:'#e0002a',base:'zipper',mul:.8,req:{lv:9},desc:'【専用】見えない斬撃を直線上に走らせ、並んだ敵をまとめて切り裂く'},
  {id:'x_rou',ch:'rou',name:'呪言「爆ぜろ」',sym:'爆',col:'#ffe066',base:'killer',mul:.7,req:{lv:4},desc:'【専用】呪言を浴びせた敵を、少し後に爆ぜさせる'},
  {id:'x_haru',ch:'haru',name:'式神「鵺」',sym:'鵺',col:'#6a6aff',base:'weather',mul:.6,req:{lv:4},desc:'【専用】雷を帯びた鳥の式神が、画面内の敵に落雷を浴びせる'},
  {id:'x_nori',ch:'nori',name:'共鳴りの一撃',sym:'鳴',col:'#ff8a5c',base:'kiss',mul:.7,req:{lv:4},desc:'【専用】打ち込んだ釘が共鳴し、少し後に同じダメージをもう一度'},
@@ -1274,6 +1281,8 @@ const skillsFor=s=>SKILLS.filter(sk=>[].concat(sk.ch).includes(s.who.id));
 const reqOf=(s,sk)=>(sk.reqCh&&sk.reqCh[s.who.id])||sk.req;
 const awReq=s=>s.who&&s.who.role==='sup'?AW_REQ.sup:AW_REQ.main;
 const reqOk=(s,r)=>Object.keys(r).every(k=>sv(s,k)>=r[k]);
+const afterOk=(s,sk)=>!sk.after||s.skills.some(k=>k.id===sk.after);
+const afterTxt=sk=>sk.after?`「${SKILLS.find(k=>k.id===sk.after).name}」習得後・`:'';
 const reqTxt=r=>Object.entries(r).map(([k,v])=>`${UPS[k].n}${v}`).join('・');
 function learnSkill(s,sk){s.skills.push(sk);if(sk.passive){s[sk.id]=true;return}
   const base=DEFS.find(d=>d.id===sk.base),d=Object.assign({},base,{id:'sk_'+sk.id,col:sk.col,name:sk.name,plane:0}),b=mkStand(d);b.owner=s;b.mul=sk.mul*SK_POW;b.lv=s.lv;b.cd=1+R();s.subs.push(b)}
@@ -1281,8 +1290,8 @@ function skNotice(s,sk){const d=document.createElement('div');d.className='unloc
   d.innerHTML=`<div class="stg">${sk.sym}</div><div><small>スキル自動習得 ─ ${s.who.name}</small><b>${sk.name}</b><span>条件：${reqTxt(reqOf(s,sk))}</span></div>`;pushNotice(d);sfx('gold')}
 // 強化値が条件に届いたスキル・開眼を習得する（開眼のカットインは G.awQ に積み、resume() で流す）
 function checkLearn(s){if(!s||!s.who)return;
-  for(const sk of skillsFor(s)){if(s.skills.includes(sk)||!reqOk(s,reqOf(s,sk)))continue;learnSkill(s,sk);skNotice(s,sk);shout(P.x,P.y-80,'「'+sk.name+'」習得!!',sk.col,30)}
-  if(!s.aw&&!s.awReady&&reqOk(s,awReq(s))){s.awReady=true;awNotice(s)}
+  for(const sk of skillsFor(s)){if(s.skills.includes(sk)||!reqOk(s,reqOf(s,sk))||!afterOk(s,sk))continue;learnSkill(s,sk);skNotice(s,sk);shout(P.x,P.y-80,'「'+sk.name+'」習得!!',sk.col,30)}
+  if(!s.aw&&!s.awReady&&reqOk(s,awReq(s))&&skillsFor(s).every(k=>s.skills.includes(k))){s.awReady=true;awNotice(s)}
   recalc();G.slotDirty=true}
 function awNotice(s){const d=document.createElement('div');d.className='unlock syn';d.style.setProperty('--c','#ff6b7a');
   d.innerHTML=`<div class="stg">眼</div><div><small>開眼条件クリア ─ ${s.who.name}</small><b>呪物に触れると開眼!!</b><span>必殺技「${AWAKE[s.def.id].name}」</span></div>`;pushNotice(d);sfx('gold');shout(P.x,P.y-110,'開眼条件クリア ─ 呪物を探せ!!','#ff6b7a',30)}
@@ -1298,9 +1307,9 @@ const UP_W=['lv','lv','pow','cd','area'];
 function upCard(s,ex){const o=UP_W.filter(u=>u!==ex);return{k:'up',s,u:o[(R()*o.length)|0]}}
 // 札に添える「この強化で何が起きるか」
 function hintFor(s,u){const t={lv:s.lv,...s.up};t[u]++;const ok=r=>Object.keys(r).every(k=>t[k]>=r[k]),h=[];
-  for(const sk of skillsFor(s))if(!s.skills.includes(sk)&&ok(reqOf(s,sk)))h.push(`<b class="hn" style="color:${sk.col}">★「${sk.name}」を習得！</b>`);
-  if(!s.aw&&!s.awReady&&ok(awReq(s)))h.push(`<b class="hn" style="color:#ff6b7a">★ 開眼条件クリア（呪物で開眼）</b>`);
-  if(!h.length){let best=null;const cand=skillsFor(s).filter(sk=>!s.skills.includes(sk)).map(sk=>[sk.name,reqOf(s,sk)]);if(!s.aw&&!s.awReady)cand.push(['開眼条件',awReq(s)]);
+  for(const sk of skillsFor(s))if(!s.skills.includes(sk)&&afterOk(s,sk)&&ok(reqOf(s,sk)))h.push(`<b class="hn" style="color:${sk.col}">★「${sk.name}」を習得！</b>`);
+  if(!s.aw&&!s.awReady&&ok(awReq(s))&&skillsFor(s).every(k=>s.skills.includes(k)))h.push(`<b class="hn" style="color:#ff6b7a">★ 開眼条件クリア（呪物で開眼）</b>`);
+  if(!h.length){let best=null;const cand=skillsFor(s).filter(sk=>!s.skills.includes(sk)&&afterOk(s,sk)).map(sk=>[sk.name,reqOf(s,sk)]);if(!s.aw&&!s.awReady)cand.push(['開眼条件',awReq(s)]);
     for(const[n,r]of cand){if(!(u in r))continue;const need=Object.keys(r).reduce((a,k)=>a+Math.max(0,r[k]-t[k]),0);if(!best||need<best[0])best=[need,n]}
     if(best)h.push(`<small class="hn">あと${best[0]}で「${best[1]}」</small>`)}
   return h.join('<br>')}
@@ -1993,14 +2002,14 @@ function renderPause(){$('pdet').classList.add('hidden');$('pmain').classList.re
 const cdPct=s=>Math.round((1-cdRed(s))*100);
 function showStandDetail(s){const d=s.def,A=AWAKE[d.id];
   $('pdet').style.setProperty('--c',d.col);const ar=awReq(s);
-  const skl=skillsFor(s).map(sk=>{const own=s.skills.includes(sk),r=reqOf(s,sk);return`<div class="skr ${own?'on':''}" style="--c:${sk.col}"><b>${own?'✔':'🔒'} ${sk.name}</b><span>条件：${Object.entries(r).map(([k,v])=>`${UPS[k].n}${v}（現在${sv(s,k)}）`).join('・')}</span><small>${sk.desc}</small></div>`}).join('');
+  const skl=skillsFor(s).map(sk=>{const own=s.skills.includes(sk),r=reqOf(s,sk);return`<div class="skr ${own?'on':''}" style="--c:${sk.col}"><b>${own?'✔':'🔒'} ${sk.name}</b><span>条件：${afterTxt(sk)}${Object.entries(r).map(([k,v])=>`${UPS[k].n}${v}（現在${sv(s,k)}）`).join('・')}</span><small>${sk.desc}</small></div>`}).join('');
   $('pdet').innerHTML=`<div class="dtop"><img src="${s.who.img}" alt=""><div><div class="dtag">${TYPE_NAME[d.type]}</div><div class="dname">${d.name}</div><div class="djp">「${d.jp}」</div>
       <div class="dlv">${s.aw?'<b class="awb">開眼</b>　':''}練度 <b>${s.lv}</b></div></div></div>
     <div class="dsec"><h4>${roleOf(s)}：${s.who.name}</h4><p>${dfmt(d.desc(s.L))}</p></div>
     <div class="dsec"><h4>強化値（上限なし）</h4><p>練度 ${s.lv}${s.lv>MAXLV?`（超過分 攻撃力+${Math.round(UPV.lvx*100*(s.lv-MAXLV))}%）`:''}　攻撃力 ${s.up.pow}（+${Math.round(UPV.pow*100*s.up.pow)}%）　頻度 ${s.up.cd}（間隔 -${cdPct(s)}%）　効果範囲 ${s.up.area}（+${Math.round(UPV.area*100*s.up.area)}%）</p></div>
     <div class="dsec"><h4>スキル ─ 条件に届くと自動で習得</h4>${skl}</div>
     ${s.lv<MAXLV?`<div class="dsec nx"><h4>次の練度（${s.lv+1}）</h4><p>${dfmt(d.desc(effLv(s.lv+1)))}</p></div>`:''}
-    <div class="dsec awk ${s.aw?'on':''}"><h4>必殺技 ─ ${A.name}</h4><p>${A.desc}</p><div class="ast">${s.aw?'★ 開眼済み ─ 発動中':s.awReady?'★ 開眼条件クリア ─ 呪物に触れると開眼する！':`開眼条件：${reqTxt(ar)}（現在 練度${s.lv}）を満たした状態で呪物に触れる`}</div></div>
+    <div class="dsec awk ${s.aw?'on':''}"><h4>必殺技 ─ ${A.name}</h4><p>${A.desc}</p><div class="ast">${s.aw?'★ 開眼済み ─ 発動中':s.awReady?'★ 開眼条件クリア ─ 呪物に触れると開眼する！':`開眼条件：技をすべて習得・${reqTxt(ar)}（現在 練度${s.lv}）を満たした状態で呪物に触れる`}</div></div>
     <button class="bigbtn sub" id="pback">◀ 一覧へ戻る</button>`;
   $('pmain').classList.add('hidden');$('pdet').classList.remove('hidden');$('pause').scrollTop=0;$('pback').onclick=renderPause;sfx('tick')}
 
