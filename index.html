@@ -706,7 +706,7 @@ a.bigbtn.more{background:linear-gradient(180deg,#14306e,#0a1636);border-color:rg
   <div class="row2" style="margin-top:14px"><button class="bigbtn sub" id="trainBtn">トレーニング</button><button class="bigbtn sub" id="zukanBtn">図鑑・実績</button><button class="bigbtn sub" id="setBtn">設定</button></div>
   <div class="row2"><a class="bigbtn sub more" href="https://red-freegames.github.io/">🎮 他のゲームを見る</a></div>
   <div class="best" id="best"></div>
-  <div class="how">PC：WASD / 矢印キーで移動　スマホ：画面をドラッグ<br>出撃キャラ＋サポート1人の術式が自動で戦う<br>レベルアップは「共通ステータス／出撃キャラ強化／サポート強化」の3択（上限なし）<br>強化値が条件に届くとスキル（黒閃・専用呪術など）を自動で習得<br>ステージに潜む術師を探し出せ（MAPで位置を確認）<br>マネーで主人公の解放・トレーニングができる<br>練度が一定（出撃14・サポート10）に届くと開眼し、必殺技を得る<br>「呪物」に触れると強化値がランダムに上がる<br>1ステージ10分。10:00まで生き延びればクリア<br>ステージ5以降は、8:00に現れるラスボスも倒す必要がある</div>
+  <div class="how">PC：WASD / 矢印キーで移動　スマホ：画面をドラッグ<br>出撃キャラ＋サポート1人の術式が自動で戦う<br>レベルアップは「共通ステータス／出撃キャラ強化／サポート強化」の3択（上限なし）<br>強化値が条件に届くと、そのキャラの代名詞的な技（黒閃・反転術式など）を自動で習得<br>ステージに潜む術師を探し出せ（MAPで位置を確認）<br>マネーで主人公の解放・トレーニングができる<br>練度が一定（出撃14・サポート10）に届いた状態で「呪物」に触れると開眼し、必殺技を得る<br>それ以外の時、呪物は強化値をランダムに上げる<br>1ステージ10分。10:00まで生き延びればクリア<br>ステージ5以降は、8:00に現れるラスボスも倒す必要がある</div>
   <div class="fanote" style="margin-top:8px;font-size:12px;color:#c9b8e0;opacity:.85;text-align:center">※個人制作の非公式ファンゲームです</div>
   <div class="marq"><div id="marq"></div></div>
 </div>
@@ -938,7 +938,7 @@ const LOOK={
 };
 // role：'main'=出撃キャラ（4人）／'sup'=サポート（4人。レベルアップの選択肢に登場し、参戦中は mods の効果）
 const CHARS=[
- {id:'jin',role:'main',part:'東都校',name:'虎堂 ユウ',en:'YU TORADO',title:'呪いの王を宿した少年',stand:'star',hp:165,pas:'全攻撃の攻撃力 +20%・黒閃の才',mods:{dmg:1.2},unlock:{init:1}},
+ {id:'jin',role:'main',part:'東都校',name:'虎堂 ユウ',en:'YU TORADO',title:'呪いの王を宿した少年',stand:'star',hp:180,pas:'全攻撃の攻撃力 +30%・黒閃の才',mods:{dmg:1.3},unlock:{init:1}},
  {id:'jo',role:'main',part:'東都校',name:'乙瀬 ユウタ',en:'YUTA OTOSE',title:'特級の呪いに愛された青年',stand:'diamond',hp:175,pas:'HPが毎秒 3 自然回復・攻撃力 +10%・初期練度アップ',mods:{regen:3,dmg:1.1},boost:1,unlock:{money:1500}},
  {id:'dion',role:'main',part:'東都校',name:'六条 ソラ',en:'SORA ROKUJO',title:'目隠しをした現代最強',stand:'time',hp:180,pas:'攻撃力 +25%・HP自然回復 +2/秒・初期練度アップ',mods:{dmg:1.25,regen:2},boost:2,unlock:{meet:'time'}},
  {id:'dia',role:'main',part:'特級',name:'宿祢 オウ',en:'OU SUKUNE',title:'千年前に君臨した呪いの王',stand:'crimson',hp:190,pas:'全攻撃の攻撃力 +30%・初期練度アップ',mods:{dmg:1.3},boost:1,unlock:{meet:'crimson'}},
@@ -1089,10 +1089,10 @@ const nailAct=l=>l>=8?4:l>=5?3:l>=3?2:1;
 const DEFS=[
 /* ---- 近距離型 ---- */
 {id:'star',type:0,name:'DIVERGENT RUSH',jp:'逕路の連撃',col:'#ff2a3a',sym:'拳',cry:'まだまだァッ!!',
- desc:l=>`呪力が遅れて響く拳の連打。一撃${8+3*l}ダメージ × ${6+l}連打`,
+ desc:l=>`呪力が遅れて響く拳の連打。一撃${9+3.5*l}ダメージ × ${6+l}連打`,
  upd(s,dt){if(s.rush>0){s.rush-=dt;if(!s.tg||s.tg.dead)s.tg=near(P.x,P.y,200);if(!s.tg){s.rush=0;return}aimAt(s,s.tg);s.rt-=dt;
-   if(s.rt<=0){s.rt=.055;for(const e of inR(s.tg.x,s.tg.y,44))hurt(e,8+3*s.L,{kb:22});punchFx(s.tg.x,s.tg.y,s.def.col);sfx('hit')}return}
-  if((s.cd-=dt)<=0){const e=near(P.x,P.y,180);if(!e){s.cd=.15;return}s.tg=e;s.rush=.055*(6+s.L);s.rt=0;s.cd=1.2*cdm(s);say(s,e.x,e.y-40,'ドドドッ')}}},
+   if(s.rt<=0){s.rt=.055;for(const e of inR(s.tg.x,s.tg.y,58))hurt(e,9+3.5*s.L,{kb:22});punchFx(s.tg.x,s.tg.y,s.def.col);sfx('hit')}return}
+  if((s.cd-=dt)<=0){const e=near(P.x,P.y,180);if(!e){s.cd=.15;return}s.tg=e;s.rush=.055*(6+s.L);s.rt=0;s.cd=1.0*cdm(s);say(s,e.x,e.y-40,'ドドドッ')}}},
 {id:'diamond',type:0,name:'REVERSE BLADE',jp:'反転の太刀',col:'#ff5cc8',sym:'刀',cry:'純愛だよ…!!',
  desc:l=>`呪力を纏わせた太刀の一閃${22+8*l}。命中した敵1体ごとに反転術式で本体HPを${(.5+.25*l).toFixed(2)}回復（最大6体分）`,
  upd(s,dt){if((s.cd-=dt)<=0){const e=near(P.x,P.y,190);if(!e){s.cd=.15;return}aimAt(s,e);let n=0;for(const t of inR(e.x,e.y,70)){hurt(t,22+8*s.L,{kb:90});n++}
@@ -1248,18 +1248,15 @@ function mkStand(def){return{get L(){return effLv(Math.min(this.lv,MAXLV))},def,
 /* ================= 新システム：出撃キャラ＋サポート1人。レベルアップは「共通強化」か「新スキル」 ================= */
 /* ================= 新システム：レベルアップは「共通／出撃キャラ／サポート」の3択。上限なし
    スキル・開眼は、そのキャラの強化値が条件に届いた瞬間に自動で習得する ================= */
-const UPV={pow:.045,cd:.035,area:.05,lvx:.06},SK_POW=.55;
+const UPV={pow:.06,cd:.04,area:.06,lvx:.08},SK_POW=.55;
 const cdRed=s=>1/(1+UPV.cd*s.up.cd);
 const UPS={lv:{id:'lv',n:'練度',sym:'練',col:'#e8dfc8',d:`術式の練度 +1（威力・数・範囲が総合的に伸びる。${MAXLV}を超えた分は攻撃力 +${UPV.lvx*100}%ずつ）`},pow:{id:'pow',n:'攻撃力',sym:'力',col:'#ff5c6a',d:`このキャラの全攻撃（スキル含む）+${UPV.pow*100}%`},
   cd:{id:'cd',n:'頻度',sym:'速',col:'#8ec8ff',d:'このキャラの攻撃間隔を短縮（強化するほど速くなる）'},area:{id:'area',n:'効果範囲',sym:'広',col:'#7dd36a',d:`このキャラの攻撃範囲・弾の大きさ +${UPV.area*100}%`}};
 makeStatImgs(Object.values(UPS));
 // req：習得条件（練度・攻撃力・頻度・効果範囲の強化値）。reqCh：キャラ別の条件
 const SKILLS=[
- {id:'kokusen',name:'黒閃',sym:'閃',col:'#e0303a',passive:1,req:{pow:4},reqCh:{jin:{pow:2}},desc:'このキャラの攻撃が8%の確率で黒い火花を散らし、ダメージ2.5倍'},
- {id:'kani',name:'簡易領域',sym:'簡',col:'#c8f0ff',base:'heaven',mul:.55,req:{area:4},desc:'一定間隔で周囲に結界を張り、敵を弾き飛ばす衝撃波を放つ'},
- {id:'jugu',name:'呪具投擲',sym:'具',col:'#cfd6e0',base:'silver',mul:.5,req:{cd:4},desc:'呪具を投げ放ち、直線上の敵を貫く'},
- {id:'tobari',name:'呪符爆破',sym:'符',col:'#ffb35c',base:'plankton',mul:.55,req:{pow:3,area:3},desc:'呪符を投げつけ、着弾で爆発させる'},
- {id:'hanten',name:'反転術式',sym:'反',col:'#7dffb0',passive:1,regen:1.5,req:{lv:9},desc:'負の呪力を反転させて肉体を治す。HP自然回復 +1.5/秒'},
+ {id:'kokusen',ch:'jin',name:'黒閃',sym:'閃',col:'#e0303a',passive:1,req:{pow:3},desc:'【専用】攻撃が8%の確率で黒い火花を散らし、ダメージ2.5倍'},
+ {id:'hanten',ch:['jo','dion','dia'],name:'反転術式',sym:'反',col:'#7dffb0',passive:1,regen:1.5,req:{lv:9},desc:'【専用】負の呪力を反転させて肉体を治す。HP自然回復 +1.5/秒'},
  {id:'x_jin',ch:'jin',name:'逕路・爆ぜる蹴撃',sym:'蹴',col:'#ff4b3b',base:'diver',mul:.7,req:{lv:5},desc:'【専用】蹴りで呪力を流し込み、敵を内側から爆ぜさせる'},
  {id:'x_jo',ch:'jo',name:'呪力の大放出',sym:'放',col:'#ff5cc8',base:'hermit',mul:.7,req:{lv:6},desc:'【専用】底なしの呪力を放ち、複数の敵を同時に撃ち抜く'},
  {id:'x_dion',ch:'dion',name:'術式反転「紅」',sym:'紅',col:'#ff2020',base:'void',mul:.8,req:{lv:6},desc:'【専用】反転させた無限の斥力で、前方の敵を空間ごと吹き飛ばす'},
@@ -1270,10 +1267,10 @@ const SKILLS=[
  {id:'x_iji',ch:'iji',name:'帳・二重',sym:'重',col:'#8a7bff',base:'violet',mul:.6,req:{lv:4},desc:'【専用】もう一枚帳を重ね、別の群れも結界に閉じ込める'},
 ];
 makeStatImgs(SKILLS);
-// 開眼（必殺技）の条件：出撃キャラは練度14、サポートは練度10
+// 開眼（必殺技）の条件：出撃キャラは練度14、サポートは練度10。条件を満たした状態で呪物に触れると開眼
 const AW_REQ={main:{lv:14},sup:{lv:10}};
 const sv=(s,k)=>k==='lv'?s.lv:s.up[k];
-const skillsFor=s=>SKILLS.filter(sk=>!sk.ch||sk.ch===s.who.id);
+const skillsFor=s=>SKILLS.filter(sk=>[].concat(sk.ch).includes(s.who.id));
 const reqOf=(s,sk)=>(sk.reqCh&&sk.reqCh[s.who.id])||sk.req;
 const awReq=s=>s.who&&s.who.role==='sup'?AW_REQ.sup:AW_REQ.main;
 const reqOk=(s,r)=>Object.keys(r).every(k=>sv(s,k)>=r[k]);
@@ -1285,8 +1282,12 @@ function skNotice(s,sk){const d=document.createElement('div');d.className='unloc
 // 強化値が条件に届いたスキル・開眼を習得する（開眼のカットインは G.awQ に積み、resume() で流す）
 function checkLearn(s){if(!s||!s.who)return;
   for(const sk of skillsFor(s)){if(s.skills.includes(sk)||!reqOk(s,reqOf(s,sk)))continue;learnSkill(s,sk);skNotice(s,sk);shout(P.x,P.y-80,'「'+sk.name+'」習得!!',sk.col,30)}
-  if(!s.aw&&reqOk(s,awReq(s))){s.aw=true;SAVE.awakened=SAVE.awakened||[];if(!SAVE.awakened.includes(s.def.id)){SAVE.awakened.push(s.def.id);saveData();checkCharUnlocks()}G.awQ.push(s)}
+  if(!s.aw&&!s.awReady&&reqOk(s,awReq(s))){s.awReady=true;awNotice(s)}
   recalc();G.slotDirty=true}
+function awNotice(s){const d=document.createElement('div');d.className='unlock syn';d.style.setProperty('--c','#ff6b7a');
+  d.innerHTML=`<div class="stg">眼</div><div><small>開眼条件クリア ─ ${s.who.name}</small><b>呪物に触れると開眼!!</b><span>必殺技「${AWAKE[s.def.id].name}」</span></div>`;pushNotice(d);sfx('gold');shout(P.x,P.y-110,'開眼条件クリア ─ 呪物を探せ!!','#ff6b7a',30)}
+// 開眼：条件を満たしたキャラが呪物に触れた時のみ
+function awaken(s){s.aw=true;s.awReady=false;SAVE.awakened=SAVE.awakened||[];if(!SAVE.awakened.includes(s.def.id)){SAVE.awakened.push(s.def.id);saveData();checkCharUnlocks()}G.awQ.push(s)}
 function resume(){if(G.awQ&&G.awQ.length){G.cutQ.push(...G.awQ.splice(0));cutin(G.cutQ.shift(),'aw');return}G.state='play';afterChoice()}
 function kokusenFx(e){fx({t:'kflash',x:e.x,y:e.y,life:.32,a:R()*TAU});fx({t:'ring',x:e.x,y:e.y,r0:6,r1:60,life:.25,col:'#ff1a2e',lw:5});part(e.x,e.y,'#000000',10,280,3.5,.35);part(e.x,e.y,'#ff1a2e',6,220,2.5,.3);G.shake=Math.max(G.shake,4);if(R()<.4)shout(e.x,e.y-30,'黒閃!!','#ff1a2e',32)}
 // サポート候補：解放済みのサポート（まだ誰も参戦していない時だけ）
@@ -1298,12 +1299,12 @@ function upCard(s,ex){const o=UP_W.filter(u=>u!==ex);return{k:'up',s,u:o[(R()*o.
 // 札に添える「この強化で何が起きるか」
 function hintFor(s,u){const t={lv:s.lv,...s.up};t[u]++;const ok=r=>Object.keys(r).every(k=>t[k]>=r[k]),h=[];
   for(const sk of skillsFor(s))if(!s.skills.includes(sk)&&ok(reqOf(s,sk)))h.push(`<b class="hn" style="color:${sk.col}">★「${sk.name}」を習得！</b>`);
-  if(!s.aw&&ok(awReq(s)))h.push(`<b class="hn" style="color:#ff6b7a">★ 開眼！必殺技「${AWAKE[s.def.id].name}」</b>`);
-  if(!h.length){let best=null;const cand=skillsFor(s).filter(sk=>!s.skills.includes(sk)).map(sk=>[sk.name,reqOf(s,sk)]);if(!s.aw)cand.push(['開眼',awReq(s)]);
+  if(!s.aw&&!s.awReady&&ok(awReq(s)))h.push(`<b class="hn" style="color:#ff6b7a">★ 開眼条件クリア（呪物で開眼）</b>`);
+  if(!h.length){let best=null;const cand=skillsFor(s).filter(sk=>!s.skills.includes(sk)).map(sk=>[sk.name,reqOf(s,sk)]);if(!s.aw&&!s.awReady)cand.push(['開眼条件',awReq(s)]);
     for(const[n,r]of cand){if(!(u in r))continue;const need=Object.keys(r).reduce((a,k)=>a+Math.max(0,r[k]-t[k]),0);if(!best||need<best[0])best=[need,n]}
     if(best)h.push(`<small class="hn">あと${best[0]}で「${best[1]}」</small>`)}
   return h.join('<br>')}
-const willAw=c=>{if(c.k!=='up'||c.s.aw)return false;const t={lv:c.s.lv,...c.s.up},r=awReq(c.s);t[c.u]++;return Object.keys(r).every(k=>t[k]>=r[k])};
+const willAw=c=>{if(c.k!=='up'||c.s.aw||c.s.awReady)return false;const t={lv:c.s.lv,...c.s.up},r=awReq(c.s);t[c.u]++;return Object.keys(r).every(k=>t[k]>=r[k])};
 const roleOf=s=>s===G.st[0]?'出撃':'サポート';
 
 /* ================= シナジー：特定の術式を揃えると発動 ================= */
@@ -1966,7 +1967,7 @@ function renderZukan(){$('ztabs').querySelectorAll('button').forEach(b=>b.classL
     if(!un&&!z.uses)return`<div class="tc lock zc" style="--c:#555"><img src="${d.img}" alt=""><div class="ti"><b>？？？</b><small>${unlockText(npc)}</small></div></div>`;
     return`<div class="tc zc ${aw?'mx':''}" style="--c:${d.col}"><img src="${d.img}" alt=""><div class="ti"><b>${d.name}${aw?' <em class="zaw">開眼</em>':''}</b><small>${TYPE_NAME[d.type]}「${d.jp}」${npc?'　─ '+npc.name:''}</small>
       <div class="zst"><span>累計ダメージ <b>${N(z.dmg||0)}</b></span><span>撃破 <b>${N(z.kills||0)}</b></span><span>最高 <b>${z.best?(z.best>=MAXLV?'MAX':'Lv'+z.best):'─'}</b></span><span>使用 <b>${z.uses||0}</b>回</span></div>
-      <small class="zaa">必殺技：${aw?`<b>${AWAKE[d.id].name}</b> ─ ${AWAKE[d.id].desc}`:'？？？（練度が開眼条件に届くと判明）'}</small></div></div>`}).join('');
+      <small class="zaa">必殺技：${aw?`<b>${AWAKE[d.id].name}</b> ─ ${AWAKE[d.id].desc}`:'？？？（開眼条件を満たして呪物に触れると判明）'}</small></div></div>`}).join('');
   else $('zlist').innerHTML=ACH.map(a=>{const got=SAVE.ach.includes(a.id),v=Math.min(a.n,a.v()),eq=SAVE.title===a.id;
     return`<div class="tc zc ${got?'mx':'zng'}" style="--c:${got?'#ffd23f':'#6a5a8a'}"><div class="zico">${got?'★':'☆'}</div><div class="ti"><b>「${a.t}」</b><small>${a.d}　報酬 ◎${a.m.toLocaleString()}</small>
       ${got?'':`<div class="zbar"><i style="width:${v/a.n*100}%"></i></div><small>${N(v)} / ${N(a.n)}</small>`}</div>
@@ -1983,7 +1984,7 @@ function renderPause(){$('pdet').classList.add('hidden');$('pmain').classList.re
   $('pchar').innerHTML=`<img src="${G.ch.img}" alt=""><div class="pci"><div class="pcn">${G.ch.name} <small>Lv${G.lv}${titleName()?`　「${titleName()}」`:''}${G.hard?'　HARD':''}</small></div><div class="pcp">★ ${G.ch.pas}${SAVE.cm[G.ch.id]?`（強化 +${SAVE.cm[G.ch.id]}）`:''}</div>
     <div class="pstats">${rows.map(([k,v,id])=>`<div><span>${k}</span><b>${v}</b>${b[id]?`<i>+${b[id]}</i>`:''}</div>`).join('')}</div>
     <div class="pgold">今回の獲得マネー <b>◎ ${Math.floor(G.gold)}</b></div>
-    <div class="prule">レベルアップは「共通ステータス／出撃キャラ強化／サポート強化」の3択（上限なし）。各キャラの強化値が条件に届くと、スキルと開眼（必殺技）を自動で習得する。条件は下の一覧から「詳細を見る」で確認できる。</div></div>`;
+    <div class="prule">レベルアップは「共通ステータス／出撃キャラ強化／サポート強化」の3択（上限なし）。各キャラの強化値が条件に届くと、そのキャラの代名詞的な技を自動で習得する。開眼（必殺技）は、条件を満たした状態で呪物に触れると発現する。条件は下の一覧から「詳細を見る」で確認できる。</div></div>`;
   $('plist').innerHTML=G.st.map((s,i)=>`<button class="prow ${s.aw?'aw':''}" data-i="${i}" style="--c:${s.def.col}"><img src="${s.def.img}" alt=""><span class="pn"><b>${s.who.name}</b><small>${roleOf(s)}｜${s.def.name}「${s.def.jp}」｜スキル${s.skills.length}</small></span><span class="pl">${lvTxt(s)}</span><span class="pd">詳細を見る ▶</span></button>`).join('')||'<div class="pempty">術式なし</div>';
   const ids=G.st.map(s=>s.def.id);$('psyn').innerHTML=SYN.map(y=>{const{n,t}=synTier(y,ids);return`<div class="sr ${t>=0?'on':''}" style="--c:${y.col}"><div class="srh"><span class="stag ${t>=0?'on':''}">${y.tag}</span><b>${y.name}</b><em>${n}/${y.mem.length}</em></div>
     <div class="srm">${y.mem.map(m=>{const d=DEFS.find(x=>x.id===m);return`<img src="${d.img}" class="${ids.includes(m)?'own':''}" title="${d.name}" alt="">`}).join('')}</div>
@@ -1999,7 +2000,7 @@ function showStandDetail(s){const d=s.def,A=AWAKE[d.id];
     <div class="dsec"><h4>強化値（上限なし）</h4><p>練度 ${s.lv}${s.lv>MAXLV?`（超過分 攻撃力+${Math.round(UPV.lvx*100*(s.lv-MAXLV))}%）`:''}　攻撃力 ${s.up.pow}（+${Math.round(UPV.pow*100*s.up.pow)}%）　頻度 ${s.up.cd}（間隔 -${cdPct(s)}%）　効果範囲 ${s.up.area}（+${Math.round(UPV.area*100*s.up.area)}%）</p></div>
     <div class="dsec"><h4>スキル ─ 条件に届くと自動で習得</h4>${skl}</div>
     ${s.lv<MAXLV?`<div class="dsec nx"><h4>次の練度（${s.lv+1}）</h4><p>${dfmt(d.desc(effLv(s.lv+1)))}</p></div>`:''}
-    <div class="dsec awk ${s.aw?'on':''}"><h4>必殺技 ─ ${A.name}</h4><p>${A.desc}</p><div class="ast">${s.aw?'★ 開眼済み ─ 発動中':`開眼条件：${reqTxt(ar)}（現在 練度${s.lv}）─ 届いた瞬間に開眼`}</div></div>
+    <div class="dsec awk ${s.aw?'on':''}"><h4>必殺技 ─ ${A.name}</h4><p>${A.desc}</p><div class="ast">${s.aw?'★ 開眼済み ─ 発動中':s.awReady?'★ 開眼条件クリア ─ 呪物に触れると開眼する！':`開眼条件：${reqTxt(ar)}（現在 練度${s.lv}）を満たした状態で呪物に触れる`}</div></div>
     <button class="bigbtn sub" id="pback">◀ 一覧へ戻る</button>`;
   $('pmain').classList.add('hidden');$('pdet').classList.remove('hidden');$('pause').scrollTop=0;$('pback').onclick=renderPause;sfx('tick')}
 
@@ -2010,7 +2011,7 @@ function openChoice(start){
   const hasAw=ch.some(willAw);
   $('lvTitle').textContent='LEVEL UP!!';
   $('lvSub').textContent=`Lv ${G.lv}　─　共通／出撃／サポートから1つ強化${G.st.length<2?'（サポート未参戦）':''}`;
-  $('lvKak').textContent='★ 開眼まであと1 ★';$('lvKak').classList.toggle('hidden',!hasAw);
+  $('lvKak').textContent='★ 開眼条件まであと1 ★';$('lvKak').classList.toggle('hidden',!hasAw);
   $('cards').innerHTML=ch.map((c,i)=>{const dl=`animation-delay:${i*.09}s`;
     if(c.stat){const st=c.stat;return`<div class="card stat" style="--c:${st.col};--t:${st.col};${dl}" data-i="${i}">
       <div class="ctop"><span class="ctag">共通ステータス</span><span class="clv"><b>+${G.bonus[st.id]+1}</b></span></div>
@@ -2049,10 +2050,11 @@ function endCutin(){if(G.state!=='cutin')return;$('cutin').className='';if(G.cut
 /* ---- 呪物（ボス・エリートが落とす）：80%で1進化 / 16%で3進化 / 4%で5進化
    進化先：Lv上昇 or（Lv MAX かつ未開眼なら）開眼。全て開眼済み＆枠が埋まっていれば基本ステータス+1 ---- */
 let CH=null;
-function rollChest(){const r=R(),n=r<.8?1:r<.96?3:5,res=[];
-  for(let k=0;k<n;k++){const s=G.st[(R()*G.st.length)|0],u=UP_W[(R()*UP_W.length)|0],from=sv(s,u);if(u==='lv')s.lv++;else s.up[u]++;res.push({s,u,from,to:from+1})}
-  const pre=new Set(G.st.filter(s=>s.aw)),pk=G.st.map(s=>s.skills.length);G.st.forEach(checkLearn);
-  G.st.forEach((s,i)=>{for(const sk of s.skills.slice(pk[i]))res.push({s,sk});if(s.aw&&!pre.has(s))res.push({s,aw:true})});
+// 呪物：開眼条件を満たしたキャラがいれば開眼。それ以外は強化値をランダムに上げる（80%で1回 / 16%で3回 / 4%で5回）
+function rollChest(){const r=R(),n=r<.8?1:r<.96?3:5,res=[],rdy=G.st.filter(s=>s.awReady&&!s.aw),pk=G.st.map(s=>s.skills.length);
+  for(let k=0;k<n;k++){const a=rdy.shift();if(a){awaken(a);res.push({s:a,aw:true});continue}
+    const s=G.st[(R()*G.st.length)|0],u=UP_W[(R()*UP_W.length)|0],from=sv(s,u);if(u==='lv')s.lv++;else s.up[u]++;res.push({s,u,from,to:from+1})}
+  G.st.forEach(checkLearn);G.st.forEach((s,i)=>{for(const sk of s.skills.slice(pk[i]))res.push({s,sk})});
   recalc();G.slotDirty=true;return{n,res}}
 const chestLbl=r=>r.aw?'開眼!!':r.sk?'「'+r.sk.name+'」習得':`${UPS[r.u].n}${r.from}→${r.to}`;
 function chestLater(ms,f){CH.tm.push(setTimeout(f,ms))}
