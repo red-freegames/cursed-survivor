@@ -924,7 +924,8 @@ const AWAKE={
  nail:{name:'確定演出・無限大当たり',desc:'3秒毎に、全てを貫く巨大な当たり玉を放つ',
   upd(s,dt){if((s.awT=(s.awT??3)-dt)>0)return;s.awT=3;const e=near(P.x,P.y,500);if(!e)return;shoot({x:P.x,y:P.y,a:Math.atan2(e.y-P.y,e.x-P.x),sp:300,r:18,dmg:60+12*s.L,pierce:999,life:2.6,kind:'nail',col:'#ffd23f',spin:25,big:1});sfx('cut')}},
  parallel:{name:'肉体の乗り換え',desc:'受けたダメージの半分を取り込んだ呪霊へ押し付け、被ダメージ -50%'},
- heaven:{name:'極ノ番・百鬼の渦',desc:'全術式のクールダウンがさらに -15%'},
+ heaven:{name:'極ノ番・百鬼の渦',desc:'全術式のクールダウンがさらに -15%。6秒毎に取り込んだ呪霊を圧縮した渦を放ち、群れの中心を呑み込む',
+  upd(s,dt){if((s.awT=(s.awT??3)-dt)>0)return;const e=randNear(P.x,P.y,420);if(!e){s.awT=.5;return}s.awT=6;explode(e.x,e.y,170,70+18*s.L,'#c8f0ff');fx({t:'ring',x:e.x,y:e.y,r0:170,r1:10,life:.5,col:'#c8f0ff',lw:8});shout(e.x,e.y-60,'極ノ番!!','#c8f0ff',34)}},
  door:{name:'呪言「堕ちろ」',desc:'攻撃を受けると周囲220の敵すべてに呪言を浴びせ、5秒間 行動停止させる'},
  stone:{name:'傀儡の結界',desc:'4秒毎に本体の周囲に呪糸の網を張り、触れた敵を縛りつつ継続ダメージ',
   upd(s,dt){if((s.awT=(s.awT??4)-dt)>0)return;s.awT=4;if(!near(P.x,P.y,200))return;G.zn.push({x:P.x,y:P.y,r:140,life:5,max:5,tick:.3,tt:0,dmg:8+3*s.L,kind:'web',col:'#3dbfff',onHit:(z,t)=>{t.weak=Math.max(t.weak,1);t.stun=Math.max(t.stun||0,.25)}})}},
@@ -951,6 +952,8 @@ const LOOK={
  dion:{style:'tower',coat:'#10142a',hair:'#f2f6ff',acc:'#3d8bff'},dia:{style:'pomp',coat:'#e8e0d0',hair:'#ff9aa8',acc:'#e0002a'},
  rou:{style:'cap',coat:'#14183a',hair:'#e8e8f0',acc:'#ffe066'},iji:{style:'fringe',coat:'#1a1a22',hair:'#2a2a2a',acc:'#8a7bff'},
  haru:{style:'tower',coat:'#14183a',hair:'#0e0e14',acc:'#6a6aff'},nori:{style:'bob',coat:'#14183a',hair:'#c86a3a',acc:'#ff8a5c'},
+ oku:{style:'pomp',coat:'#2a2a3a',hair:'#1a1410',acc:'#5d7bff'},pol:{style:'long',coat:'#1a2a20',hair:'#1f3a2a',acc:'#7dff9a'},
+ buchi:{style:'fringe',coat:'#c8b080',hair:'#e8d080',acc:'#4fa8ff'},enri:{style:'long',coat:'#1a1a1a',hair:'#141418',acc:'#c8f0ff'},
 };
 // role：'main'=出撃キャラ（4人）／'sup'=サポート（4人。レベルアップの選択肢に登場し、参戦中は mods の効果）
 const CHARS=[
@@ -963,11 +966,15 @@ const CHARS=[
  {id:'iji',role:'sup',part:'補助監督',name:'伊知見 キヨ',en:'KIYO ICHIMI',title:'胃痛に耐える補助監督',stand:'violet',pas:'参戦中：獲得マネー +20%',mods:{gold:1.2},unlock:{init:1}},
  {id:'haru',role:'sup',part:'東都校',name:'伏影 メグ',en:'MEGU FUSEKAGE',title:'影を従える寡黙な少年',stand:'golden',pas:'参戦中：クールダウン -6%',mods:{cd:.94},unlock:{meet:'golden'}},
  {id:'nori',role:'sup',part:'東都校',name:'釘宮 ノバ',en:'NOVA KUGIMIYA',title:'田舎を飛び出した鉄槌の少女',stand:'emerald',pas:'参戦中：攻撃力 +6%',mods:{dmg:1.06},unlock:{meet:'emerald'}},
+ {id:'pol',role:'sup',part:'東都校',name:'禅野 マキ',en:'MAKI ZENNO',title:'呪力なき天与の武人',stand:'silver',pas:'参戦中：移動速度 +8%',mods:{spd:1.08},unlock:{meet:'silver'}},
+ {id:'oku',role:'sup',part:'西京校',name:'東道 アオ',en:'AO TODO',title:'親友を求める筋骨の巨漢',stand:'void',pas:'参戦中：HP自然回復 +0.8/秒',mods:{regen:.8},unlock:{meet:'void'}},
+ {id:'buchi',role:'sup',part:'一級',name:'七瀬 ケイ',en:'KEI NANASE',title:'残業を嫌う脱サラ術師',stand:'zipper',pas:'参戦中：攻撃力 +6%',mods:{dmg:1.06},unlock:{meet:'zipper'}},
+ {id:'enri',role:'sup',part:'呪詛師',name:'夏渡 ゲン',en:'GEN NATSUWATARI',title:'百鬼を従える最悪の呪詛師',stand:'heaven',pas:'参戦中：クールダウン -5%',mods:{cd:.95},unlock:{meet:'heaven'}},
 ];
 CHARS.forEach(c=>{c.look=LOOK[c.id];c.hp=c.hp||150});
 
 /* ================= ステージに潜むキャラ（会うと解放。サポートは空きがあればその場で参戦） ================= */
-const NPCS=[['s2','haru'],['s3','nori'],['s6','dion'],['s7','dia']].map(([st,as])=>({id:'n_'+as,as,st}));
+const NPCS=[['s1','pol'],['s2','haru'],['s3','nori'],['s4','oku'],['s5','buchi'],['s6','dion'],['s7','dia'],['s8','enri']].map(([st,as])=>({id:'n_'+as,as,st}));
 NPCS.forEach(n=>{const c=CHARS.find(x=>x.id===n.as);n.name=c.name;n.title=c.title;n.look=c.look;n.stand=c.stand});
 
 /* ================= 9ステージ（後ろほど高難度） ================= */
@@ -1189,11 +1196,11 @@ const DEFS=[
  desc:l=>`斬撃「解」を連続で放つ（${16+6*l}×2）。さらに呪王が表に出て2.5秒間 完全無敵。終了時、半径${180+12*l}の敵を斬り刻む${45+15*l}（CD${Math.max(8,14-.6*l).toFixed(1)}秒）`,
  upd(s,dt){kaiSlash(s,dt);if(G.erase>0)return;if((s.cd-=dt)<=0){if(!near(P.x,P.y,240)){s.cd=.3;return}G.erase=2.5;G.eraseS=s;cntAdd('erase',1);bigText('斬り刻む…!!','red long');sfx('cut');s.cd=Math.max(8,14-.6*s.L)*cdm(s)}}},
 {id:'void',type:2,name:'CLAP SHIFT',jp:'不戯の拍手',col:'#5d7bff',sym:'拍',cry:'ブラザー!!',
- desc:l=>`前方扇状${130+6*l}の敵を手拍子で入れ替え打ち据える${30+10*l}（防御無視）。惑わされた敵は3秒間 鈍足＆被ダメージ+30%`,
- upd(s,dt){if((s.cd-=dt)<=0){if(!near(P.x,P.y,200)){s.cd=.15;return}const a=faceAng(200),r=130+6*s.L;
-   for(const e of inR(P.x,P.y,r))if(Math.abs(angDiff(Math.atan2(e.y-P.y,e.x-P.x),a))<.95){hurt(e,30+10*s.L,{pa:1});e.weak=Math.max(e.weak,3)}
+ desc:l=>`前方扇状${170+6*l}の敵を手拍子で入れ替え打ち据える${34+12*l}（防御無視）。惑わされた敵は3秒間 鈍足＆被ダメージ+30%`,
+ upd(s,dt){if((s.cd-=dt)<=0){if(!near(P.x,P.y,260)){s.cd=.15;return}const a=faceAng(260),r=170+6*s.L;
+   for(const e of inR(P.x,P.y,r))if(Math.abs(angDiff(Math.atan2(e.y-P.y,e.x-P.x),a))<.95){hurt(e,34+12*s.L,{pa:1});e.weak=Math.max(e.weak,3)}
    fx({t:'erase',x:P.x,y:P.y,a,r,life:.35,col:s.def.col});
-   s.atk=.25;s.tx=P.x+Math.cos(a)*40;s.ty=P.y+Math.sin(a)*40;say(s,P.x+Math.cos(a)*80,P.y+Math.sin(a)*80-20,'パンッ');s.cd=2*cdm(s);sfx('cut')}}},
+   s.atk=.25;s.tx=P.x+Math.cos(a)*40;s.ty=P.y+Math.sin(a)*40;say(s,P.x+Math.cos(a)*80,P.y+Math.sin(a)*80-20,'パンッ');s.cd=1.4*cdm(s);sfx('cut')}}},
 {id:'disc',type:2,name:'FLYING BLADE',jp:'抜刀・飛ぶ斬撃',col:'#e6e6e6',sym:'刀',cry:'抜刀ッ!!',
  desc:l=>`貫通する飛ぶ斬撃${2+Math.floor(l/2)}発（各${10+3*l}）。斬られた敵は6秒間 鈍足＆被ダメージ+30%`,
  upd(s,dt){if((s.cd-=dt)<=0){if(!near(P.x,P.y,420)){s.cd=.2;return}const a=faceAng(),n=2+Math.floor(s.L/2);
@@ -1284,6 +1291,10 @@ const SKILLS=[
  {id:'x_rou',ch:'rou',name:'呪言「爆ぜろ」',sym:'爆',col:'#ffe066',base:'killer',mul:.7,req:{lv:5},desc:'【専用】呪言を浴びせた敵を、少し後に爆ぜさせる'},
  {id:'x_haru',ch:'haru',name:'式神「鵺」',sym:'鵺',col:'#6a6aff',base:'weather',mul:.6,req:{lv:5},desc:'【専用】雷を帯びた鳥の式神が、画面内の敵に落雷を浴びせる'},
  {id:'x_nori',ch:'nori',name:'共鳴りの一撃',sym:'鳴',col:'#ff8a5c',base:'kiss',mul:.7,req:{lv:5},desc:'【専用】打ち込んだ釘が共鳴し、少し後に同じダメージをもう一度'},
+ {id:'x_pol',ch:'pol',name:'遊鉾・薙ぎ払い',sym:'薙',col:'#7dff9a',base:'fool',mul:.7,req:{lv:5},desc:'【専用】呪具を振り回し、扇状の敵をまとめて吹き飛ばす'},
+ {id:'x_oku',ch:'oku',name:'拍手の連撃',sym:'連',col:'#5d7bff',base:'star',mul:.6,req:{lv:5},desc:'【専用】入れ替えた直後に拳の連打を叩き込む'},
+ {id:'x_buchi',ch:'buchi',name:'鈍器の残業打',sym:'鈍',col:'#4fa8ff',base:'diamond',mul:.7,req:{lv:5},desc:'【専用】布を巻いた鈍器で重い一撃。命中数に応じて少し回復'},
+ {id:'x_enri',ch:'enri',name:'呪霊操術・特攻',sym:'霊',col:'#c8f0ff',base:'parallel',mul:.7,req:{lv:5},desc:'【専用】取り込んだ呪霊を放ち、敵に喰らいつかせて自爆させる'},
  {id:'x_iji',ch:'iji',name:'帳・二重',sym:'重',col:'#8a7bff',base:'violet',mul:.6,req:{lv:5},desc:'【専用】もう一枚帳を重ね、別の群れも結界に閉じ込める'},
 ];
 makeStatImgs(SKILLS);
@@ -1333,12 +1344,17 @@ const roleOf=s=>s===G.st[0]?'出撃':'サポート';
 // シナジー：出撃キャラとサポートの2人が同じ組に属すると発動
 // シナジー：出撃キャラとサポートの組み合わせで発動
 const SYN=[
- {id:'p3',name:'呪術高専・東都校',tag:'東都校',col:'#5ab8ff',mem:['star','diamond','time','door','violet','golden','emerald'],tiers:[[2,{dmg:.12,cd:.04},'攻撃+12%・CD-4%']]},
+ {id:'p3',name:'呪術高専・東都校',tag:'東都校',col:'#5ab8ff',mem:['star','diamond','time','door','violet','golden','emerald','silver'],tiers:[[2,{dmg:.12,cd:.04},'攻撃+12%・CD-4%']]},
  {id:'hero',name:'東都の一年生',tag:'一年',col:'#ffd23f',mem:['star','golden','emerald'],tiers:[[2,{xp:.15,dmg:.08},'経験値+15%・攻撃+8%']]},
  {id:'tm',name:'二年の親友',tag:'二年',col:'#ff5cc8',mem:['diamond','door'],tiers:[[2,{cd:.1,reg:1},'CD-10%・回復+1/秒']]},
  {id:'tw',name:'最強とその補佐',tag:'補佐',col:'#e8e8ff',mem:['time','violet'],tiers:[[2,{ts:1,tsdmg:.6},'領域展開+1秒・領域内の与ダメージ+60%']]},
  {id:'p4',name:'先生と教え子',tag:'師弟',col:'#3d8bff',mem:['time','golden','emerald','door'],tiers:[[2,{dmg:.1,xp:.1},'攻撃+10%・経験値+10%']]},
  {id:'p5',name:'呪王の執着',tag:'執着',col:'#e0002a',mem:['crimson','golden'],tiers:[[2,{dmg:.15,arm:.08},'攻撃+15%・被ダメージ-8%']]},
+ {id:'bro',name:'超親友（ブラザー）',tag:'親友',col:'#5d7bff',mem:['star','void'],tiers:[[2,{dmg:.15,cd:.05},'攻撃+15%・CD-5%']]},
+ {id:'old',name:'かつての親友',tag:'旧友',col:'#c8f0ff',mem:['time','heaven'],tiers:[[2,{dmg:.18,ts:1},'攻撃+18%・領域展開+1秒']]},
+ {id:'p8',name:'七三の手ほどき',tag:'手ほどき',col:'#4fa8ff',mem:['star','zipper','golden','emerald'],tiers:[[2,{xp:.12,arm:.06},'経験値+12%・被ダメージ-6%']]},
+ {id:'p9',name:'二年の同級生',tag:'同級',col:'#7dff9a',mem:['diamond','silver','door'],tiers:[[2,{dmg:.12,spd:.06},'攻撃+12%・速度+6%']]},
+ {id:'p10',name:'呪いの王と呪詛師',tag:'外道',col:'#e0002a',mem:['crimson','heaven'],tiers:[[2,{dmg:.2,hp:-20},'攻撃+20%・最大HP-20']]},
  {id:'p7',name:'補助監督の送迎',tag:'送迎',col:'#8a7bff',mem:['violet','star','diamond','crimson'],tiers:[[2,{spd:.1,hp:30},'速度+10%・最大HP+30']]},
 ];
 const synOf=id=>SYN.filter(y=>y.mem.includes(id));
@@ -1798,9 +1814,26 @@ const TALK={
  dia_iji:{join:[['iji','ひっ…なぜ私がこの方と…'],['dia','震えるな。帳を下ろせ']],awM:[['iji','胃が…胃が限界です…']],awS:[['dia','ほう…補助にしては気骨がある']],boss:[['dia','次の獲物はどこだ'],['iji','た、ただいま調べます!!']]},
  dia_haru:{join:[['dia','来たか、伏影の小僧'],['haru','…あんたと組む気はない']],awM:[['haru','…やはり、化け物だ']],awS:[['dia','そうだ…それでいい。もっと見せろ']],boss:[['dia','お前の影、もっと深く覗かせろ'],['haru','断る']]},
  dia_nori:{join:[['nori','あんたと組むなんて最悪…'],['dia','吠えるな。釘で楽しませてみろ']],awM:[['nori','なにこれ…次元が違う…']],awS:[['dia','ケヒッ、いい度胸だ']],boss:[['dia','歯応えがない'],['nori','あんたが強すぎんのよ!']]},
+ jin_oku:{join:[['oku','ブラザー!! 待たせたな!'],['jin','東道! 来てくれたのか!']],awM:[['oku','それでこそ我が親友!!']],awS:[['jin','ブラザーの本気…すげえ!']],boss:[['oku','見事な連携だったぞ、ブラザー!'],['jin','おう! 次も頼むぜ!']]},
+ jin_pol:{join:[['pol','へばんなよ、虎堂'],['jin','押忍! 禅野先輩!']],awM:[['pol','…やるじゃねえか']],awS:[['jin','先輩の槍さばき、目で追えねえ!']],boss:[['pol','まだ動けるな? 次行くぞ'],['jin','うっす!']]},
+ jin_buchi:{join:[['buchi','子供に無理はさせられません'],['jin','七瀬さん! 一緒で心強いっす!']],awM:[['buchi','…君はもう、立派な術師です']],awS:[['jin','七瀬さん、かっけえ…!']],boss:[['buchi','定時までに片付きましたね'],['jin','七瀬さんのおかげっす!']]},
+ jin_enri:{join:[['enri','やあ、器の少年。少し手を貸そう'],['jin','…あんた、信用していいのかよ']],awM:[['enri','ほう…面白い呪力だ']],awS:[['jin','なんて数の呪霊だ…']],boss:[['enri','取り込む価値もない呪霊だったね'],['jin','…やっぱ怖えよ、あんた']]},
+ jo_oku:{join:[['oku','特級術師か! 好みのタイプを言ってみろ!'],['jo','え…今それ必要ですか?']],awM:[['oku','素晴らしい…! 退屈しない男だ!']],awS:[['jo','すごい…位置が一瞬で入れ替わった']],boss:[['oku','いい戦いだった!'],['jo','はい、ありがとうございます']]},
+ jo_pol:{join:[['pol','背中は預けた。しくじるなよ'],['jo','うん。任せて、マキさん']],awM:[['pol','…相変わらず、底が知れねえな']],awS:[['jo','マキさん、やっぱりすごいや']],boss:[['pol','腕は落ちてねえな'],['jo','マキさんこそ']]},
+ jo_buchi:{join:[['buchi','特級の方と組めるとは。助かります'],['jo','こちらこそ、よろしくお願いします']],awM:[['buchi','…規格外ですね']],awS:[['jo','七瀬さんの一撃、無駄がない']],boss:[['buchi','これで帰れますね'],['jo','お疲れさまでした']]},
+ jo_enri:{join:[['enri','久しぶりだね、乙瀬ユウタ'],['jo','…あなたとは、二度と並びたくなかった']],awM:[['enri','その呪い…やはり欲しいな']],awS:[['jo','…油断はしない']],boss:[['enri','君の呪力は、相変わらず美しい'],['jo','次はあなたの番かもしれませんよ']]},
+ dion_oku:{join:[['oku','六条ソラ! 貴様とも組んでみたかった!'],['dion','暑苦しいの来たなぁ']],awM:[['oku','これが最強…胸が躍る!!']],awS:[['dion','へえ、いい拍手じゃん']],boss:[['oku','次はどいつだ!'],['dion','元気だねえ']]},
+ dion_pol:{join:[['pol','先生、サボんなよ'],['dion','信用ないなあ']],awM:[['pol','…化け物め']],awS:[['dion','いいね。もう誰も文句言えないよ']],boss:[['dion','さすが僕の生徒'],['pol','先生は何もしてねえだろ']]},
+ dion_buchi:{join:[['buchi','六条さん…なぜ私を'],['dion','信頼してるからだよ、七瀬']],awM:[['buchi','…はあ。これだから天才は']],awS:[['dion','相変わらず真面目だねえ']],boss:[['dion','七瀬、飲みに行こうよ'],['buchi','勤務時間外なのでお断りします']]},
+ dion_enri:{join:[['enri','また並んで戦う日が来るとはね'],['dion','…勘違いするなよ、今だけだ']],awM:[['enri','やはり君は…最強だ']],awS:[['dion','…懐かしい呪霊ばっかりだ']],boss:[['enri','昔みたいだね、ソラ'],['dion','…ああ、そうだね']]},
+ dia_oku:{join:[['oku','呪いの王よ! 好みのタイプを聞かせてもらおう!'],['dia','…うるさい男だ']],awM:[['oku','ハハハ! 震えが止まらん!!']],awS:[['dia','くだらん術式だが…悪くない']],boss:[['dia','少しは楽しめたか'],['oku','最高だ!!']]},
+ dia_pol:{join:[['pol','あんたに背中預ける気はねえからな'],['dia','呪力なき女か…面白い']],awM:[['pol','…ちっ、規格外かよ']],awS:[['dia','ほう…呪力無しでその域とはな']],boss:[['dia','貴様、名を覚えておいてやる'],['pol','いらねえよ']]},
+ dia_buchi:{join:[['buchi','…最悪の残業になりそうです'],['dia','七三か。せいぜい斬り分けろ']],awM:[['buchi','…時間外手当では足りませんね']],awS:[['dia','ほう、見事な断ち筋だ']],boss:[['dia','まだ物足りんな'],['buchi','私はもう帰ります']]},
+ dia_enri:{join:[['enri','呪いの王と組めるとは光栄だ'],['dia','媚びるな、呪詛師']],awM:[['enri','素晴らしい…これが千年前の頂点か']],awS:[['dia','呪霊を弄ぶか…悪くない趣味だ']],boss:[['enri','この呪霊、取り込んでもいいかな'],['dia','好きにしろ']]},
 };
 // 開眼した本人のひとこと／サポート不在時のボス撃破
-const AW_LINE={jin:'火花が…止まらねえ!!',jo:'全部出し切る…これが僕の領域だ',dion:'さあ、無限の情報で溺れなよ',dia:'頭が高い…ここは俺の厨だ',rou:'ツナマヨ!!',iji:'き、帳…全力で下ろします!!',haru:'…全部出す。ついて来い',nori:'あたしの本気、見せてあげる!'};
+const AW_LINE={jin:'火花が…止まらねえ!!',jo:'全部出し切る…これが僕の領域だ',dion:'さあ、無限の情報で溺れなよ',dia:'頭が高い…ここは俺の厨だ',rou:'ツナマヨ!!',iji:'き、帳…全力で下ろします!!',haru:'…全部出す。ついて来い',nori:'あたしの本気、見せてあげる!',
+  oku:'ブラザーの前で、無様は晒せん!!',pol:'呪力が無くても、全部ぶっ飛ばす',buchi:'残業は…これっきりにします',enri:'さあ、百鬼夜行を始めよう'};
 const SOLO_BOSS={jin:'よし! 次!',jo:'…終わった、かな',dion:'はい、お疲れ~',dia:'退屈だ'};
 const pairKey=()=>G.st[0]&&G.st[1]?G.st[0].who.id+'_'+G.st[1].who.id:null;
 const TQ=[];let talkT=null;
@@ -2243,6 +2276,10 @@ function showStats(){$('stats').innerHTML=`<span style="color:#ffd23f">${titleNa
   +`<div class="newun"><div><span>獲得マネー <b>+${Math.floor(G.gold).toLocaleString()}</b>　（所持 ${SAVE.money.toLocaleString()}）</span></div></div>`+resultTable();buildShare()}
 /* ================= 合体必殺技：特定の術式2体が揃うと、時を止めたカットインから共同の大技 ================= */
 const COMBOS=[
+ {a:'star',b:'void',name:'超親友の黒閃',cry:'ブラザー!! ─ 行くぞ!!'},
+ {a:'time',b:'heaven',name:'最強の二人',cry:'久しぶりにやろうか ─ 合わせるよ'},
+ {a:'star',b:'zipper',name:'七三の教え',cry:'弱点はそこです ─ 了解っす!!'},
+ {a:'diamond',b:'silver',name:'二年の剣',cry:'マキさん! ─ 遅れんなよ!'},
  {a:'star',b:'golden',name:'虎と影の挟撃',cry:'伏影!! ─ 来い、影狼!!'},
  {a:'star',b:'emerald',name:'拳と釘の共鳴り',cry:'行くぞ釘宮!! ─ 共鳴れッ!!'},
  {a:'star',b:'door',name:'呪言と拳の連携',cry:'動くな!! ─ うおおおッ!!'},
@@ -2705,7 +2742,7 @@ if(look.style==='dog'){const fur=tint||look.hair,dk=tint||look.coat;c.fillStyle=
 function makePortraits(){[...CHARS,...NPCS].forEach(ch=>{const cnv=document.createElement('canvas');cnv.width=160;cnv.height=170;const g=cnv.getContext('2d');
   const sd=DEFS.find(d=>d.id===ch.stand);g.globalAlpha=.9;g.drawImage(sd.spr,-4,-6,136,159);g.globalAlpha=1;drawHuman(108,128,-1,null,2.5,0,ch.look,g);ch.img=cnv.toDataURL();ch.cnv=cnv})}makePortraits();
 // キャラ本人の描画：体（drawHuman）＋腕。攻撃中は術式ごとのモーション
-const POSE={star:'punch',diamond:'katana',time:'point',crimson:'claw',door:'speak',violet:'palm',golden:'sign',emerald:'hammer'};
+const POSE={star:'punch',diamond:'katana',time:'point',crimson:'claw',door:'speak',violet:'palm',golden:'sign',emerald:'hammer',silver:'throw',void:'sign',zipper:'katana',heaven:'point'};
 const SK_POSE={sk_kokusen:'punch',sk_kani:'palm',sk_jugu:'throw',sk_tobari:'throw',sk_x_jin:'kick',sk_x_jo:'palm',sk_x_dion:'point',sk_x_dia:'claw',sk_x_rou:'speak',sk_x_iji:'palm',sk_x_haru:'sign',sk_x_nori:'hammer'};
 function drawFighter(x,y,face,look,s,tint,walk){
   const col=s?s.def.col:'#fff',on=s&&s.pz>0,pk=on?(s.pk2||POSE[s.def.id]||'palm'):null,t=on?1-s.pz/.26:0,ez=Math.sin(Math.min(1,t*2.4)*Math.PI/2);
