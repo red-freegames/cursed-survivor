@@ -770,7 +770,7 @@ a.bigbtn.more{background:linear-gradient(180deg,#14306e,#0a1636);border-color:rg
 </div>
 
 <div id="pause" class="ov hidden"><h2>PAUSE</h2>
-  <div id="pmain"><div id="pchar"></div><div class="phead">術式一覧 ─ タップで詳細</div><div id="plist"></div><div class="phead">シナジー</div><div id="psyn"></div></div>
+  <div id="pmain"><div id="pchar"></div><div class="phead">術式一覧 ─ タップで詳細</div><div id="plist"></div><div class="phead">発動中のシナジー</div><div id="psyn"></div></div>
   <div id="pdet" class="hidden"></div>
   <div class="row2"><button class="bigbtn" id="resumeBtn">再開</button><button class="bigbtn sub" id="psetBtn">設定</button><button class="bigbtn sub" id="quitBtn">リタイア</button></div></div>
 
@@ -2102,9 +2102,10 @@ function renderPause(){$('pdet').classList.add('hidden');$('pmain').classList.re
     <div class="pgold">今回の獲得マネー <b>◎ ${Math.floor(G.gold)}</b></div>
     <div class="prule">レベルアップは「共通ステータス／出撃キャラ強化／サポート強化」の3択（上限なし）。各キャラの強化値が条件に届くと、そのキャラの代名詞的な技を自動で習得する。開眼（必殺技）は、条件を満たした状態で呪物に触れると発現する。条件は下の一覧から「詳細を見る」で確認できる。</div></div>`;
   $('plist').innerHTML=G.st.map((s,i)=>`<button class="prow ${s.aw?'aw':''}" data-i="${i}" style="--c:${s.def.col}"><img src="${s.def.img}" alt=""><span class="pn"><b>${s.who.name}</b><small>${roleOf(s)}｜${s.def.name}「${s.def.jp}」｜スキル${s.skills.length}</small></span><span class="pl">${lvTxt(s)}</span><span class="pd">詳細を見る ▶</span></button>`).join('')||'<div class="pempty">術式なし</div>';
-  const ids=G.st.map(s=>s.def.id);$('psyn').innerHTML=SYN.map(y=>{const{n,t}=synTier(y,ids);return`<div class="sr ${t>=0?'on':''}" style="--c:${y.col}"><div class="srh"><span class="stag ${t>=0?'on':''}">${y.tag}</span><b>${y.name}</b><em>${n}/${y.mem.length}</em></div>
-    <div class="srm">${y.mem.map(m=>{const d=DEFS.find(x=>x.id===m);return`<img src="${d.img}" class="${ids.includes(m)?'own':''}" title="${d.name}" alt="">`}).join('')}</div>
-    <div class="srt">${y.tiers.map((tr,i)=>`<span class="${i===t?'act':''}">${tr[0]}体：${tr[2]}</span>`).join('')}</div></div>`}).join('');
+  // シナジーは「発動中の効果」だけを表示
+  const ids=G.st.map(s=>s.def.id),act=SYN.map(y=>[y,synTier(y,ids).t]).filter(([,t])=>t>=0);
+  $('psyn').innerHTML=act.length?act.map(([y,t])=>`<div class="sr on" style="--c:${y.col}"><div class="srh"><span class="stag on">${y.tag}</span><b>${y.name}</b></div><div class="srt"><span class="act">${y.tiers[t][2]}</span></div></div>`).join('')
+    :'<div class="pempty">発動中のシナジーはありません</div>';
   [...$('plist').querySelectorAll('.prow')].forEach(el=>el.onclick=()=>showStandDetail(G.st[+el.dataset.i]))}
 const cdPct=s=>Math.round((1-cdRed(s))*100);
 function showStandDetail(s){const d=s.def,A=AWAKE[d.id];
